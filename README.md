@@ -2,6 +2,10 @@ CMPT371 Group2 Final Project - Draw & Conquer
 
 Application Flow (WIP)
 
+- Client States: QUEUE, GAME, WAIT, SCOREBOARD
+- Server States: QUEUE, GAME
+- Cell States (Server data structure): OPEN, CLOSED, USED
+
 1. QUEUE state (User connects to client)
 - client and server start in the QUEUE state
 - client notifies server; server responds with playerCount & playerReadyCount
