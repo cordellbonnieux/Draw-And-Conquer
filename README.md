@@ -1,3 +1,19 @@
 CMPT371 Group2 Final Project - Draw & Conquer
 
-TODO: Create draw-and-conquer-server
+Application Flow (WIP)
+
+1. QUEUE state (User connects to client)
+- client and server start in the QUEUE state
+- client notifies server; server responds with playerCount & playerReadyCount
+- each time a user connects, or changes their ready status: playerCount & playerReadyCount are retransmitted to the user. 
+- if playerCount & playerReadyCount are equal, client & server change to GAME state
+
+2. GAME state
+- upon transition to this state, create a playerCount by playerCount grid on client
+- the server creates a datastructure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
+- each client may only start to draw on an OPEN cell
+- when a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player
+- if a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again
+- each action by any user will trigger a retransmission of the current state of the game board to all players
+- when a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state
+- if another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state
