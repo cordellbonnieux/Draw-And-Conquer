@@ -10,9 +10,10 @@ enum SquareState {
 };
 
 const DenyAndConquerGame: React.FC = () => {
+  const { v4: uuidv4 } = require('uuid');
   const GRID_SIZE = 8;
   const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
-
+  const [uuid] = useState(() => uuidv4());
   const [color, setColor] = useState(["#FAB972", "#FFA500"]);
   const [opponentColor, setOpponentColor] = useState(["#FFA500", "#FAB972"]);
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null);
@@ -32,7 +33,7 @@ const DenyAndConquerGame: React.FC = () => {
     //Update Board
     setSquareStates(newStates);
 
-    sendCommand("PENDOWN", { index, status: "in-progress" });
+    sendCommand(uuid, "PENDOWN", { index, status: "in-progress" });
   };
 
   const handleMouseUp = (index: number) => {
@@ -52,7 +53,7 @@ const DenyAndConquerGame: React.FC = () => {
     //Update Board
     setSquareStates(newStates);
 
-    sendCommand("PENUP", {index, status: newStatus});
+    sendCommand(uuid, "PENUP", {index, status: newStatus});
   };
 
   // Get the background color of a square 
