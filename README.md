@@ -12,13 +12,14 @@ Application Flow (WIP)
 - each time a user connects, or changes their ready status: playerCount & playerReadyCount are retransmitted to the user. 
 - if playerCount & playerReadyCount are equal, client & server change to GAME state
 
-Druring GAME state:
-  1. READY
-  Notify the server that the player is ready.
-  2. UNREADY
-  Notify the server that the player is unready.
+&nbsp;Druring GAME state:
+  &nbsp;1. READY
+  &nbsp;Notify the server that the player is ready.
+  &nbsp;2. UNREADY
+  &nbsp;Notify the server that the player is unready.
 
-3. GAME state
+
+2. GAME state
 - upon transition to this state, create a playerCount by playerCount grid on client
 - the server creates a datastructure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
 - each client may only start to draw on an OPEN cell
