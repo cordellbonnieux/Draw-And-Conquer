@@ -4,6 +4,7 @@ import './App.css';
 import TitleBar from './components/TitleBar';
 import PlayerQueueDisplay from './components/PlayerQueueDisplay';
 import ReadyButton from './components/ReadyButton';
+import DenyAndConquerGame from './components/Game';
 enum State {
   QUEUE,
   GAME,
@@ -22,7 +23,9 @@ function App(): React.JSX.Element {
       </div>
 
     else if (state == State.GAME)
-      return <div>TODO GAME</div>
+      return <div>TODO GAME
+        <DenyAndConquerGame/>
+      </div>
 
     else if (state == State.SCOREBOARD)
       return <div>TODO SCOREBOARD</div>
