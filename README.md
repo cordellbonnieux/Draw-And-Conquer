@@ -12,11 +12,11 @@ Application Flow (WIP)
 - each time a user connects, or changes their ready status: playerCount & playerReadyCount are retransmitted to the user. 
 - if playerCount & playerReadyCount are equal, client & server change to GAME state
 
-&nbsp;Druring GAME state:
-  &nbsp;1. READY
-  &nbsp;Notify the server that the player is ready.
-  &nbsp;2. UNREADY
-  &nbsp;Notify the server that the player is unready.
+- &nbsp;Druring GAME state:
+  - &nbsp;1. READY
+  - &nbsp;Notify the server that the player is ready.
+  - &nbsp;2. UNREADY
+  - &nbsp;Notify the server that the player is unready.
 
 
 2. GAME state
@@ -30,16 +30,16 @@ Application Flow (WIP)
 - if another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state
 
 
-Druring GAME state:
+- &nbsp;Druring GAME state:
   
-  1. ASSIGN_COLOR
+  - &nbsp;1. ASSIGN_COLOR
   Request a unique color assignment for this player.
   Expected Server Response:
   {
     "color": "red" // or "blue", "green", "orange"
   }
   
-  2. UPDATE_BOARD
+  - &nbsp;2. UPDATE_BOARD
   Request the current game board state and any updates from other players.
   Expected Server Response:
   {
@@ -48,13 +48,13 @@ Druring GAME state:
     "color": "blue"  // or "blue", "green", "orange"
   }
   
-  3. PENDOWN
+  - &nbsp;3. PENDOWN
   Notify the server that the player pressed down on a square to attempt scribbling it.
   "PENDOWN", {
     index: number,         // the index of the square (0–63)
     status: "in-progress"  }
   
-  5. PENUP
+  - &nbsp;5. PENUP
   Notify the server that the player released the mouse (pen up) and finished the attempt.
   "PENUP", {
     index: number,      // the index of the square
