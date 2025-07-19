@@ -35,17 +35,16 @@ Application Flow (WIP)
   - &nbsp;1. ASSIGN_COLOR
   - &nbsp;Request a unique color assignment for this player.
   - &nbsp;Expected Server Response:
-  - &nbsp;{
-    - &nbsp;"color": "red" // or "blue", "green", "orange"}
+  - &nbsp;{"color": "red" // or "blue", "green", "orange"}
   
   - &nbsp;2. UPDATE_BOARD
   - &nbsp;Request the current game board state and any updates from other players.
   - &nbsp;Expected Server Response:
-  {
-    "index": 10,
-    "status": "complete", // or “in-progress”, “failed”
-    "color": "blue"  // or "blue", "green", "orange"
-  }
+  - &nbsp;{
+    - &nbsp;"index": 10,
+    - &nbsp;"status": "complete", // or “in-progress”, “failed”
+    - &nbsp;"color": "blue"  // or "blue", "green", "orange"
+  - &nbsp;}
   
   - &nbsp;3. PENDOWN
   - &nbsp;Notify the server that the player pressed down on a square to attempt scribbling it.
