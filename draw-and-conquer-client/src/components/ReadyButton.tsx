@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react"
+import { sendCommand } from '../wsClient';
 
 export default function ReadyButton(): React.JSX.Element {
     // TODO ask server for info
@@ -6,6 +7,14 @@ export default function ReadyButton(): React.JSX.Element {
 
     function toggleReady() {
         // TODO tell server when ready is toggled
+        
+        if (!ready){
+            sendCommand("READY", "")
+            setReady(true)
+        } else {
+            sendCommand("UNREADY", "")
+            setReady(false)
+        }
     }
 
     return (<div id="ReadyButton" style={{display: 'flex', gap: '1rem'}}>

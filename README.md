@@ -12,6 +12,13 @@ Application Flow (WIP)
 - each time a user connects, or changes their ready status: playerCount & playerReadyCount are retransmitted to the user. 
 - if playerCount & playerReadyCount are equal, client & server change to GAME state
 
+- &nbsp;Druring QUEUE state:
+  - &nbsp;1. READY
+  - &nbsp;Notify the server that the player is ready.
+  - &nbsp;2. UNREADY
+  - &nbsp;Notify the server that the player is unready.
+
+
 2. GAME state
 - upon transition to this state, create a playerCount by playerCount grid on client
 - the server creates a datastructure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
@@ -21,3 +28,37 @@ Application Flow (WIP)
 - each action by any user will trigger a retransmission of the current state of the game board to all players
 - when a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state
 - if another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state
+
+
+- &nbsp;Druring GAME state:
+  
+  - &nbsp;1. ASSIGN_COLOR
+  - &nbsp;Request a unique color assignment for this player.
+  - &nbsp;Expected Server Response:
+  - &nbsp;{"color": "red" // or "blue", "green", "orange"}
+  
+  - &nbsp;2. UPDATE_BOARD
+  - &nbsp;Request the current game board state and any updates from other players.
+  - &nbsp;Expected Server Response:
+  - &nbsp;{
+    - &nbsp;"index": 10,
+    - &nbsp;"status": "complete", // or “in-progress”, “failed”
+    - &nbsp;"color": "blue"  // or "blue", "green", "orange"
+  - &nbsp;}
+  
+  - &nbsp;3. PENDOWN
+  - &nbsp;Notify the server that the player pressed down on a square to attempt scribbling it.
+  - &nbsp;"PENDOWN", {
+    - &nbsp;index: number,         // the index of the square (0–63)
+    - &nbsp;status: "in-progress"  }
+  
+  - &nbsp;5. PENUP
+  - &nbsp;Notify the server that the player released the mouse (pen up) and finished the attempt.
+  - &nbsp;"PENUP", {
+    - &nbsp;index: number,      // the index of the square
+    - &nbsp;status: "complete" // or "failed"
+  - &nbsp;}
+  - &nbsp;"complete" -> Player held pen down for over 1 second; server can mark square as taken.
+  - &nbsp;"failed" -> Player released early; server may ignore or notify others.
+
+
