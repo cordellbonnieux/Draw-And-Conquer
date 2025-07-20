@@ -17,30 +17,58 @@ Matchmaking server is always standby on port 9437 for players to enqueue.
     "uuid": "player-uuid",
     "command": "enqueue",
 }
-```
-
-On player enqueue, matchmaking server enqueue the UUID and starts heartbeat the queue length.
-
-```json
-// Server -> Client Heartbeat
+// Server -> Client Enqueue Response
 {
-    "command": "queue_heartbeat",
+    "command": "enqueue",
+    "status": "success",
     "queue_length": 2,
+}
+{
+    "command": "enqueue",
+    "status": "error",
+    "error": "abcdefg",
 }
 ```
 
-If the queue length is greater than n, queue server will start a game server and notify the players in the queue with a game session UUID and game server port. heartbeat will stop.
+On player enqueue, matchmaking server enqueue the UUID and client starts heartbeat the queue length. A player's queue is timeout after 60 seconds of no heartbeat.
+
+```json
+// Client -> Server Heartbeat Request
+{
+    "uuid": "player-uuid",
+    "command": "queue_heartbeat",
+}
+// Server -> Client Heartbeat
+{
+    "command": "queue_heartbeat",
+    "status": "success",
+    "queue_length": 2,
+}
+{
+    "command": "queue_heartbeat",
+    "status": "error",
+    "error": "abcdefg",
+}
+// Server -> Client Heartbeat Timeout
+{
+    "command": "queue_heartbeat",
+    "status": "error",
+    "error": "Heartbeat timeout, removed from queue",
+}
+```
+
+If the queue length is greater than n, queue server will start a game server and notify the players in the queue with a game session UUID. heartbeat will stop.
 
 ```json
 // Server -> Client Game Start Notification
 {
     "command": "game_start",
+    "status": "success",
     "game_session_uuid": "game-session-uuid",
-    "port": 9438,
 }
 ```
 
-Player will then communicate with the game server on port 9438 using the provided game session UUID. Game session UUID make sure the support for multiple game sessions in parallel. Randomly assigned ports for each game sessions is implemented but not used.
+Player will then communicate with the game server on port 9438 using the provided game session UUID. Game session UUID make sure the support for multiple game sessions in parallel.
 
 Player can leave the queue before the game starts, which will remove the player from the queue and stops the heartbeat.
 
@@ -48,7 +76,17 @@ Player can leave the queue before the game starts, which will remove the player 
 // Client -> Server Dequeue Request
 {
     "uuid": "player-uuid",
-    "command": "dequeue",
+    "command": "remove_from_queue",
+}
+// Server -> Client Dequeue Response
+{
+    "command": "remove_from_queue",
+    "status": "success",
+}
+{
+    "command": "remove_from_queue",
+    "status": "error",
+    "error": "abcdefg",
 }
 ```
 
