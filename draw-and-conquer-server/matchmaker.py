@@ -22,11 +22,14 @@ class MatchmakerState(ServerState):
 
     def dequeue_player(self) -> tuple[str, dict] | None:
         with self.lock:
-            return self.matchmaking_queue.popitem(last=False)
+            if self.matchmaking_queue:
+                return self.matchmaking_queue.popitem(last=False)
+            return None
 
     def remove_player(self, player_id: str) -> None:
         with self.lock:
-            del self.matchmaking_queue[player_id]
+            if player_id in self.matchmaking_queue:
+                del self.matchmaking_queue[player_id]
 
     def heartbeat_player(self, player_id: str) -> None:
         with self.lock:
@@ -148,29 +151,42 @@ def queue_watchdog(server_state: MatchmakerState) -> None:
 
         current_time = time.time()
 
+        dead_players_data = []
         with server_state.lock:
             current_queue = list(server_state.matchmaking_queue.items())
             for player_id, player_data in current_queue:
                 if current_time - player_data["last_heartbeat"] > 30:
-                    try:
-                        reply = {
-                            "command": "queue_heartbeat",
-                            "status": "error",
-                            "error": "Heartbeat timeout",
-                        }
-                        reply = json.dumps(reply)
-                        player_data["connection"].sendall(reply.encode("utf-8"))
-                        player_data["connection"].close()
-                    except Exception:
-                        pass
+                    dead_players_data.append((player_id, player_data))
 
-                    server_state.remove_player(player_id)
+        for player_id, player_data in dead_players_data:
+            try:
+                reply = {
+                    "command": "queue_heartbeat",
+                    "status": "error",
+                    "error": "Heartbeat timeout",
+                }
+                reply = json.dumps(reply)
+                player_data["connection"].sendall(reply.encode("utf-8"))
+                player_data["connection"].close()
+            except (ConnectionError, OSError, BrokenPipeError):
+                pass
 
-        with server_state.lock:
-            while len(server_state.matchmaking_queue) >= server_state.lobby_size:
+            server_state.remove_player(player_id)
+
+        while True:
+            with server_state.lock:
+                if len(server_state.matchmaking_queue) < server_state.lobby_size:
+                    break
+
                 game_session = str(uuid.uuid4())
+
+                players_for_game = []
                 for _ in range(server_state.lobby_size):
                     player_id, player_data = server_state.dequeue_player()
+                    players_for_game.append((player_id, player_data))
+
+            for player_id, player_data in players_for_game:
+                try:
                     conn = player_data["connection"]
                     reply = {
                         "command": "game_start",
@@ -180,6 +196,8 @@ def queue_watchdog(server_state: MatchmakerState) -> None:
                     reply = json.dumps(reply)
                     conn.sendall(reply.encode("utf-8"))
                     conn.close()
+                except (ConnectionError, OSError, BrokenPipeError):
+                    pass
 
 
 # mm_state = MatchmakerState(lobby_size=3)
