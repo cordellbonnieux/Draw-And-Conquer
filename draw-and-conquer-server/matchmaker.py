@@ -60,7 +60,7 @@ def request_handler(
 
         if command == "enqueue":
             if server_state.is_player_in_queue(player_id):
-                raise ValueError("enqueue | Player already in queue")
+                raise ValueError("enqueue", "Player already in queue")
 
             server_state.enqueue_player(player_id, conn)
             queue_length = server_state.get_queue_length()
@@ -75,7 +75,7 @@ def request_handler(
 
         elif command == "queue_heartbeat":
             if not server_state.is_player_in_queue(player_id):
-                raise ValueError("queue_heartbeat | Player not in queue")
+                raise ValueError("queue_heartbeat", "Player not in queue")
 
             server_state.heartbeat_player(player_id)
             queue_length = server_state.get_queue_length()
@@ -90,7 +90,7 @@ def request_handler(
 
         elif command == "remove_from_queue":
             if not server_state.is_player_in_queue(player_id):
-                raise ValueError("remove_from_queue | Player not in queue")
+                raise ValueError("remove_from_queue", "Player not in queue")
 
             reply = {
                 "command": "remove_from_queue",
@@ -124,8 +124,8 @@ def request_handler(
     except ValueError as e:
         error_message = str(e)
 
-        if " | " in error_message:
-            command, error_detail = error_message.split(" | ", 1)
+        if len(e.args) == 2 and all(isinstance(a, str) for a in e.args):
+            command, error_detail = e.args
             reply = {
                 "command": command,
                 "status": "error",
