@@ -1,18 +1,10 @@
+import argparse
 import json
+import socket
 import threading
 import time
-import argparse
 
-from server import TCPServer, UDPServer
-
-
-def request_handler(text: str) -> str:
-    try:
-        message = json.loads(text)
-    except json.JSONDecodeError:
-        message = {"error": "Invalid JSON format"}
-
-    return json.dumps(message)
+from server import ServerState, TCPServer
 
 
 def parse_args():
@@ -34,18 +26,30 @@ def parse_args():
     return parser.parse_args()
 
 
+# echo message back for testing
+def request_handler(
+    sock: socket.socket,
+    _addr: tuple[str, int],
+    data: str,
+    _server_state: ServerState,
+) -> None:
+    try:
+        _ = json.loads(data)
+
+        sock.sendall(data.encode("utf-8"))
+    except json.JSONDecodeError:
+        reply = {"error": "Invalid JSON format"}
+        reply = json.dumps(reply)
+
+        sock.sendall(reply.encode("utf-8"))
+
+
 def main():
     args = parse_args()
-    host = args.host
-    port = args.port
 
-    tcp = TCPServer(host, port, request_handler)
+    tcp = TCPServer(args.host, args.port, request_handler, ServerState())
     tcp_thread = threading.Thread(target=tcp.start, daemon=True)
     tcp_thread.start()
-
-    udp = UDPServer(host, port, request_handler)
-    udp_thread = threading.Thread(target=udp.start, daemon=True)
-    udp_thread.start()
 
     try:
         while True:
