@@ -1,17 +1,18 @@
 import json
 import socket
 import time
+import uuid
 from collections import OrderedDict
 
 from server import ServerState
-import uuid
 
 
 class MatchmakerState(ServerState):
-    def __init__(self, lobby_size: int):
+    def __init__(self, lobby_size: int, heartbeat_timeout: int):
         super().__init__()
         self.matchmaking_queue: OrderedDict[str, dict] = OrderedDict()
         self.lobby_size = lobby_size
+        self.heartbeat_timeout = heartbeat_timeout
 
     def enqueue_player(self, player_id: str, conn: socket.socket) -> None:
         with self.lock:
@@ -125,8 +126,6 @@ def request_handler(
         return True
 
     except ValueError as e:
-        error_message = str(e)
-
         if len(e.args) == 2 and all(isinstance(a, str) for a in e.args):
             command, error_detail = e.args
             reply = {
@@ -138,7 +137,7 @@ def request_handler(
             reply = {
                 "command": "generic_error",
                 "status": "error",
-                "error": error_message,
+                "error": str(e),
             }
         reply = json.dumps(reply)
         conn.sendall(reply.encode("utf-8"))
@@ -155,7 +154,10 @@ def queue_watchdog(server_state: MatchmakerState) -> None:
         with server_state.lock:
             current_queue = list(server_state.matchmaking_queue.items())
             for player_id, player_data in current_queue:
-                if current_time - player_data["last_heartbeat"] > 30:
+                if (
+                    current_time - player_data["last_heartbeat"]
+                    > server_state.heartbeat_timeout
+                ):
                     dead_players_data.append((player_id, player_data))
 
         for player_id, player_data in dead_players_data:
@@ -199,11 +201,33 @@ def queue_watchdog(server_state: MatchmakerState) -> None:
                 except (ConnectionError, OSError, BrokenPipeError):
                     pass
 
+# Example usage
+# import threading
 
-# mm_state = MatchmakerState(lobby_size=3)
+# from server import TCPServer
+
+
+# def request_handler(
+#     conn: socket.socket,
+#     addr: tuple[str, int],
+#     data: str,
+#     server_state: MatchmakerState,
+# ) -> bool:
+#     return True  # true to keep the connection, false to close it
+
+
+# def queue_watchdog(server_state: MatchmakerState) -> None:
+#     pass
+
+
+# mm_state = MatchmakerState(lobby_size=3, heartbeat_timeout=30)
 # mm_server = TCPServer(
-#     host="0.0.0.0", port=9437, handler=request_handler, state=mm_state
+#     host="0.0.0.0",
+#     port=9437,
+#     request_handler=request_handler,
+#     server_state=mm_state,
 # )
 # mm_server.start()
+
 # watchdog_thread = threading.Thread(target=queue_watchdog, args=(mm_state,), daemon=True)
 # watchdog_thread.start()
