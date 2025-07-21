@@ -7,7 +7,7 @@
 - Game server States: GAME
 - Cell States (Server data structure): OPEN, CLOSED, USED
 
-### QUEUE/START state
+### 1. QUEUE/START state
 
 Matchmaking server is always standby on port 9437 for players to enqueue.
 
@@ -90,44 +90,115 @@ Player can leave the queue before the game starts, which will remove the player 
 }
 ```
 
+---
+
 ### 2. GAME state
 
-- upon transition to this state, create a playerCount by playerCount grid on client
-- the server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
-- each client may only start to draw on an OPEN cell
-- when a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player
-- if a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again
-- each action by any user will trigger a retransmission of the current state of the game board to all players
-- when a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state
-- if another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state
+#### Description
+- Upon transition to this state, create a playerCount by playerCount grid on client.
+- The server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player).
+- Each client may only start to draw on an OPEN cell.
+- When a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player.
+- If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again.
+- Each action by any user will trigger a retransmission of the current state of the game board to all players.
+- When a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state.
+- If another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state.
 
-- Druring GAME state:
-  
-  1. ASSIGN_COLOR
+#### Game State Data Structure
+- Cell States: `OPEN`, `USED`, `CLOSED`
+- Each cell contains:
+  - `state`: CellState
+  - `owner`: Player UUID (if USED or CLOSED)
+
+#### Client/Server Commands
+
+- **ASSIGN_COLOR**
   - Request a unique color assignment for this player.
-  - Expected Server Response:
-  - {"color": "red" // or "blue", "green", "orange"}
-  
-  2. UPDATE_BOARD
+  - **Server Response Example:**
+    ```json
+    { "color": "red" }
+    ```
+
+- **UPDATE_BOARD**
   - Request the current game board state and any updates from other players.
-  - Expected Server Response:
-  - {
-    - "index": 10,
-    - "status": "complete", // or “in-progress”, “failed”
-    - "color": "blue"  // or "blue", "green", "orange"
-  - }
-  
-  3. PENDOWN
+  - **Server Response Example:**
+    ```json
+    {
+      "index": 10,
+      "status": "complete", // or "in-progress", "failed"
+      "color": "blue"
+    }
+    ```
+
+- **PENDOWN**
   - Notify the server that the player pressed down on a square to attempt scribbling it.
-  - "PENDOWN", {
-    - index: number,         // the index of the square (0–63)
-    - status: "in-progress"  }
-  
-  5. PENUP
+  - **Client Command Example:**
+    ```json
+    {
+      "uuid": "player-uuid",
+      "index": number,  // the index of the square (0–63)
+      "status": "in-progress"
+    }
+    ```
+
+- **PENUP**
   - Notify the server that the player released the mouse (pen up) and finished the attempt.
-  - "PENUP", {
-    - index: number,      // the index of the square
-    - status: "complete" // or "failed"
-  - }
+  - **Client Command Example:**
+    ```json
+    {
+      "uuid": "player-uuid",
+      "index": number,  // the index of the square
+      "status": "complete" // or "failed"
+    }
+    ```
   - "complete" -> Player held pen down for over 1 second; server can mark square as taken.
   - "failed" -> Player released early; server may ignore or notify others.
+
+---
+
+### 3. SCOREBOARD state
+
+After a game ends, the server sends the final results to all players. The client transitions to the SCOREBOARD state, where the final rankings and scores are displayed.
+
+#### Scoreboard Data Structure
+
+The server sends a list of all players and their scores. Each player object contains:
+- `id`: Unique identifier for the player (UUID)
+- `name`: Player's display name
+- `score`: Final score for the game session
+
+**Example Server Response:**
+```json
+{
+  "command": "scoreboard",
+  "status": "success",
+  "players": [
+    { "id": "uuid-1", "name": "Alice", "score": 120 },
+    { "id": "uuid-2", "name": "Bob", "score": 150 },
+    { "id": "uuid-3", "name": "You", "score": 100 }
+  ],
+  "currentPlayerId": "uuid-3"
+}
+```
+
+#### Client Rendering
+
+- The client displays a table (scoreboard) with all players, their scores, and their ranking.
+- Players with the same score share the same rank (e.g., 1, 2, 2, 4).
+- The current player's row is highlighted for easy identification.
+- The entire scoreboard is visible, not just the top scores.
+
+**Example Table:**
+
+| Rank | Name   | Score |
+|------|--------|-------|
+| 1    | Bob    | 150   |
+| 2    | Alice  | 120   |
+| 3    | You    | 100   |
+
+If two or more players have the same score, they share the same rank, and the next rank is skipped accordingly.
+
+#### Transition
+
+- After viewing the scoreboard, the client may automatically or manually return to the QUEUE state to start a new game.
+- The server resets its state to QUEUE, ready for new matchmaking.
