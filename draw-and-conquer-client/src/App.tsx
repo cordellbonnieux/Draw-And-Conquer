@@ -5,6 +5,7 @@ import TitleBar from './components/TitleBar';
 import PlayerQueueDisplay from './components/PlayerQueueDisplay';
 import ReadyButton from './components/ReadyButton';
 import DenyAndConquerGame from './components/Game';
+import ScoreBoard from './components/ScoreBoard';
 enum State {
   QUEUE,
   GAME,
@@ -13,7 +14,7 @@ enum State {
 }
 
 function App(): React.JSX.Element {
-  const [state, setState] = useState<State>(State.QUEUE)
+  const [state, setState] = useState<State>(State.SCOREBOARD)
 
   const body: () => React.JSX.Element = () => {
     if (state == State.QUEUE)
@@ -28,7 +29,10 @@ function App(): React.JSX.Element {
       </div>
 
     else if (state == State.SCOREBOARD)
-      return <div>TODO SCOREBOARD</div>
+      return (<div> 
+        <h2>Scoreboard</h2>
+        <ScoreBoard players={players} currentPlayerId={currentPlayerId}/>
+      </div>) 
 
     else if (state == State.WAIT)
       return <div>TODO WAIT</div>
@@ -65,6 +69,16 @@ function App(): React.JSX.Element {
     if (socket.readyState === WebSocket.OPEN)
       socket.close()
   })
+
+  const players = [
+    { id: '1', name: 'Alice', score: 120 },
+    { id: '2', name: 'Bob', score: 150 },
+    { id: '3', name: 'You', score: 100 },
+    { id: '4', name: 'Jane', score: 100 },
+    { id: '200', name: 'Jim', score: 100 },
+    { id: '5', name: 'Tim', score: 1100 },
+  ];
+  const currentPlayerId = '3';
 
   return (
     <div className="App" style={
