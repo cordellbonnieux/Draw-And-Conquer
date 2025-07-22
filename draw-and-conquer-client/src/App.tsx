@@ -12,6 +12,7 @@ enum State {
 }
 
 function App(): React.JSX.Element {
+  let socket: WebSocket
   const [state, setState] = useState<State>(State.QUEUE)
 
   const body: () => React.JSX.Element = () => {
@@ -35,32 +36,34 @@ function App(): React.JSX.Element {
   }
 
   useEffect(() => {
-    const socket = new WebSocket('ws://205.250.26.138/140')
+    if (!socket) {
+      socket = new WebSocket('ws://localhost:9999')
 
-    socket.onopen = () => {
-      socket.send(JSON.stringify({message: 'hello server'}))
-      console.log('sent the server a message')
+      socket.onopen = () => {
+        socket.send(JSON.stringify({"message": "hello server"}))
+        console.log('sent the server a message')
+      }
+
+      socket.onmessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data)
+        console.log('server says: ', data)
+        if (data.state == 'QUEUE')
+          setState(State.QUEUE)
+        else if (data.state == 'GAME')
+          setState(State.GAME)
+        else if (data.state == 'SCOREBOARD')
+          setState(State.SCOREBOARD)
+        else if (data.state == 'WAIT')
+          setState(State.WAIT)
+      }
+
+      socket.onerror = (error: Event) => {
+        console.error('Websocket Error: ', error)
+      }
+
+      if (socket.readyState === WebSocket.OPEN)
+        socket.close()
     }
-
-    socket.onmessage = (event: MessageEvent) => {
-      const data = JSON.parse(event.data)
-      console.log('server says: ', data)
-      if (data.state == 'QUEUE')
-        setState(State.QUEUE)
-      else if (data.state == 'GAME')
-        setState(State.GAME)
-      else if (data.state == 'SCOREBOARD')
-        setState(State.SCOREBOARD)
-      else if (data.state == 'WAIT')
-        setState(State.WAIT)
-    }
-
-    socket.onerror = (error: Event) => {
-      console.error('Websocket Error: ', error)
-    }
-
-    if (socket.readyState === WebSocket.OPEN)
-      socket.close()
   })
 
   return (

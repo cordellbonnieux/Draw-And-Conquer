@@ -2,11 +2,15 @@ import json
 import threading
 import time
 import argparse
+import asyncio
+import websockets
+
 
 from server import TCPServer, UDPServer
 
 
 def request_handler(text: str) -> str:
+    print(text)
     try:
         message = json.loads(text)
     except json.JSONDecodeError:
@@ -33,7 +37,7 @@ def parse_args():
     )
     return parser.parse_args()
 
-
+'''
 def main():
     args = parse_args()
     host = args.host
@@ -52,7 +56,18 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         pass
+'''
+async def new_websocket(websocket):
+    async for message in websocket:
+        await websocket.send(message)
 
+async def main():
+    args = parse_args()
+    host = args.host
+    port = args.port
+    async with websockets.serve(new_websocket, host, port) as server:
+        await server.serve_forever()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
+

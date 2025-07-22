@@ -38,6 +38,7 @@ class TCPServer:
                         break
 
                     response = self.request_handler(data.decode("utf-8"))
+                    print(response)
                     sock.sendall(response.encode("utf-8"))
         finally:
             with self.lock:
