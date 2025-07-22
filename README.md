@@ -1,23 +1,204 @@
-CMPT371 Group2 Final Project - Draw & Conquer
+# CMPT371 Group2 Final Project - Draw & Conquer
 
-Application Flow (WIP)
+## Application Flow (WIP)
 
 - Client States: QUEUE, GAME, WAIT, SCOREBOARD
-- Server States: QUEUE, GAME
+- Matchmaking Server States: QUEUE, START
+- Game server States: GAME
 - Cell States (Server data structure): OPEN, CLOSED, USED
 
-1. QUEUE state (User connects to client)
-- client and server start in the QUEUE state
-- client notifies server; server responds with playerCount & playerReadyCount
-- each time a user connects, or changes their ready status: playerCount & playerReadyCount are retransmitted to the user. 
-- if playerCount & playerReadyCount are equal, client & server change to GAME state
+### 1. QUEUE/START state
 
-2. GAME state
-- upon transition to this state, create a playerCount by playerCount grid on client
-- the server creates a datastructure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
-- each client may only start to draw on an OPEN cell
-- when a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player
-- if a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again
-- each action by any user will trigger a retransmission of the current state of the game board to all players
-- when a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state
-- if another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state
+Matchmaking server is always standby on port 9437 for players to enqueue.
+
+```json
+// Client -> Server Enqueue Request
+{
+    "uuid": "player-uuid",
+    "command": "enqueue",
+}
+// Server -> Client Enqueue Response
+{
+    "command": "enqueue",
+    "status": "success",
+    "queue_length": 2,
+}
+{
+    "command": "enqueue",
+    "status": "error",
+    "error": "abcdefg",
+}
+```
+
+On player enqueue, matchmaking server enqueue the UUID and client starts heartbeat the queue length. A player's queue is timeout after 60 seconds of no heartbeat.
+
+```json
+// Client -> Server Heartbeat Request
+{
+    "uuid": "player-uuid",
+    "command": "queue_heartbeat",
+}
+// Server -> Client Heartbeat
+{
+    "command": "queue_heartbeat",
+    "status": "success",
+    "queue_length": 2,
+}
+{
+    "command": "queue_heartbeat",
+    "status": "error",
+    "error": "abcdefg",
+}
+// Server -> Client Heartbeat Timeout
+{
+    "command": "queue_heartbeat",
+    "status": "error",
+    "error": "Heartbeat timeout, removed from queue",
+}
+```
+
+If the queue length is greater than n, queue server will start a game server and notify the players in the queue with a game session UUID. heartbeat will stop.
+
+```json
+// Server -> Client Game Start Notification
+{
+    "command": "game_start",
+    "status": "success",
+    "game_session_uuid": "game-session-uuid",
+}
+```
+
+Player will then communicate with the game server on port 9438 using the provided game session UUID. Game session UUID make sure the support for multiple game sessions in parallel.
+
+Player can leave the queue before the game starts, which will remove the player from the queue and stops the heartbeat.
+
+```json
+// Client -> Server Dequeue Request
+{
+    "uuid": "player-uuid",
+    "command": "remove_from_queue",
+}
+// Server -> Client Dequeue Response
+{
+    "command": "remove_from_queue",
+    "status": "success",
+}
+{
+    "command": "remove_from_queue",
+    "status": "error",
+    "error": "abcdefg",
+}
+```
+
+---
+
+### 2. GAME state
+
+#### Description
+- Upon transition to this state, create a playerCount by playerCount grid on client.
+- The server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player).
+- Each client may only start to draw on an OPEN cell.
+- When a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player.
+- If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again.
+- Each action by any user will trigger a retransmission of the current state of the game board to all players.
+- When a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state.
+- If another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state.
+
+#### Game State Data Structure
+- Cell States: `OPEN`, `USED`, `CLOSED`
+- Each cell contains:
+  - `state`: CellState
+  - `owner`: Player UUID (if USED or CLOSED)
+
+#### Client/Server Commands
+
+- **ASSIGN_COLOR**
+  - Request a unique color assignment for this player.
+  - **Server Response Example:**
+    ```json
+    { "color": "red" }
+    ```
+
+- **UPDATE_BOARD**
+  - Request the current game board state and any updates from other players.
+  - **Server Response Example:**
+    ```json
+    {
+      "index": 10,
+      "status": "complete", // or "in-progress", "failed"
+      "color": "blue"
+    }
+    ```
+
+- **PENDOWN**
+  - Notify the server that the player pressed down on a square to attempt scribbling it.
+  - **Client Command Example:**
+    ```json
+    {
+      "uuid": "player-uuid",
+      "index": number,  // the index of the square (0–63)
+      "status": "in-progress"
+    }
+    ```
+
+- **PENUP**
+  - Notify the server that the player released the mouse (pen up) and finished the attempt.
+  - **Client Command Example:**
+    ```json
+    {
+      "uuid": "player-uuid",
+      "index": number,  // the index of the square
+      "status": "complete" // or "failed"
+    }
+    ```
+  - "complete" -> Player held pen down for over 1 second; server can mark square as taken.
+  - "failed" -> Player released early; server may ignore or notify others.
+
+---
+
+### 3. SCOREBOARD state
+
+After a game ends, the server sends the final results to all players. The client transitions to the SCOREBOARD state, where the final rankings and scores are displayed.
+
+#### Scoreboard Data Structure
+
+The server sends a list of all players and their scores. Each player object contains:
+- `id`: Unique identifier for the player (UUID)
+- `name`: Player's display name
+- `score`: Final score for the game session
+
+**Example Server Response:**
+```json
+{
+  "command": "scoreboard",
+  "status": "success",
+  "players": [
+    { "id": "uuid-1", "name": "Alice", "score": 120 },
+    { "id": "uuid-2", "name": "Bob", "score": 150 },
+    { "id": "uuid-3", "name": "You", "score": 100 }
+  ],
+  "currentPlayerId": "uuid-3"
+}
+```
+
+#### Client Rendering
+
+- The client displays a table (scoreboard) with all players, their scores, and their ranking.
+- Players with the same score share the same rank (e.g., 1, 2, 2, 4).
+- The current player's row is highlighted for easy identification.
+- The entire scoreboard is visible, not just the top scores.
+
+**Example Table:**
+
+| Rank | Name   | Score |
+|------|--------|-------|
+| 1    | Bob    | 150   |
+| 2    | Alice  | 120   |
+| 3    | You    | 100   |
+
+If two or more players have the same score, they share the same rank, and the next rank is skipped accordingly.
+
+#### Transition
+
+- After viewing the scoreboard, the client may automatically or manually return to the QUEUE state to start a new game.
+- The server resets its state to QUEUE, ready for new matchmaking.

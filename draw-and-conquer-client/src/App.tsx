@@ -4,6 +4,7 @@ import './App.css';
 import TitleBar from './components/TitleBar';
 import PlayerQueueDisplay from './components/PlayerQueueDisplay';
 import ReadyButton from './components/ReadyButton';
+import DenyAndConquerGame from './components/Game';
 enum State {
   QUEUE,
   GAME,
@@ -23,7 +24,9 @@ function App(): React.JSX.Element {
       </div>
 
     else if (state == State.GAME)
-      return <div>TODO GAME</div>
+      return <div>TODO GAME
+        <DenyAndConquerGame/>
+      </div>
 
     else if (state == State.SCOREBOARD)
       return <div>TODO SCOREBOARD</div>
@@ -36,6 +39,10 @@ function App(): React.JSX.Element {
   }
 
   useEffect(() => {
+    /**
+     *  This works for connecting to the server via localhost for the sake of development
+     * 
+     */
     if (!socket) {
       socket = new WebSocket('ws://localhost:9999')
 

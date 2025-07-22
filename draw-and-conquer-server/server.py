@@ -1,7 +1,11 @@
 import socket
 import threading
-import uuid
 from typing import Callable
+
+
+class ServerState:
+    def __init__(self):
+        self.lock = threading.Lock()
 
 
 class TCPServer:
@@ -9,40 +13,34 @@ class TCPServer:
         self,
         host: str,
         port: int,
-        request_handler: Callable[[str], str],
+        request_handler: Callable,
+        server_state: ServerState,
     ):
         self.host = host
         self.port = port
         self.request_handler = request_handler
-
-        self.clients = {}
-        self.lock = threading.Lock()
-
-    def _get_client_id(self) -> str:
-        return str(uuid.uuid4())
+        self.server_state = server_state
 
     def _handle_connection(
         self,
-        sock: socket.socket,
+        conn: socket.socket,
         addr: tuple[str, int],
+        server_state: ServerState = None,
     ) -> None:
         try:
-            with self.lock:
-                client_id = self._get_client_id()
-                self.clients[client_id] = (sock, addr)
-
-            with sock:
+            with conn:
                 while True:
-                    data = sock.recv(65535)
+                    data = conn.recv(65535)
                     if not data:
                         break
 
-                    response = self.request_handler(data.decode("utf-8"))
-                    print(response)
-                    sock.sendall(response.encode("utf-8"))
-        finally:
-            with self.lock:
-                del self.clients[client_id]
+                    keep_connection = self.request_handler(
+                        conn, addr, data.decode("utf-8"), server_state
+                    )
+                    if not keep_connection:
+                        break
+        except Exception:
+            pass
 
     def start(self) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -55,7 +53,7 @@ class TCPServer:
                 conn, addr = sock.accept()
                 thread = threading.Thread(
                     target=self._handle_connection,
-                    args=(conn, addr),
+                    args=(conn, addr, self.server_state),
                 )
                 thread.daemon = True
                 thread.start()
@@ -63,6 +61,7 @@ class TCPServer:
             sock.close()
 
 
+# Simple UDP server, unused
 class UDPServer:
     def __init__(
         self,
