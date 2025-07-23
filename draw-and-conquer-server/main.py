@@ -4,6 +4,8 @@ import socket
 import threading
 import time
 
+from matchmaker import MatchmakerState, matchmaker_request_handler
+from queue_watchdog import queue_watchdog
 from server import ServerState, TCPServer
 
 
@@ -18,16 +20,39 @@ def parse_args():
         help="Host to bind",
     )
     parser.add_argument(
-        "--port",
+        "--matchmaker-port",
         type=int,
-        required=True,
-        help="Port number",
+        default=9437,
+        help="Port number for matchmaker server",
+    )
+    parser.add_argument(
+        "--games-server-port",
+        type=int,
+        default=9438,
+        help="Port number for games server",
+    )
+    parser.add_argument(
+        "--lobby-size",
+        type=int,
+        default=3,
+        help="Number of players each game session should have",
+    )
+    parser.add_argument(
+        "--heartbeat-timeout",
+        type=int,
+        default=30,
+        help="Heartbeat timeout in seconds",
+    )
+    parser.add_argument(
+        "--echo-port",
+        type=int,
+        default=None,
+        help="Port number for echo server, used for testing",
     )
     return parser.parse_args()
 
 
-# echo message back for testing
-def request_handler(
+def echo_back(
     sock: socket.socket,
     _addr: tuple[str, int],
     data: str,
@@ -47,9 +72,34 @@ def request_handler(
 def main():
     args = parse_args()
 
-    tcp = TCPServer(args.host, args.port, request_handler, ServerState())
-    tcp_thread = threading.Thread(target=tcp.start, daemon=True)
-    tcp_thread.start()
+    if args.echo_port:
+        if (
+            args.echo_port == args.matchmaker_port
+            or args.echo_port == args.games_server_port
+        ):
+            raise ValueError(
+                "Echo port must be different from matchmaker and games server ports."
+            )
+
+        tcp = TCPServer(args.host, args.echo_port, echo_back, ServerState())
+        tcp_thread = threading.Thread(target=tcp.start, daemon=True)
+        tcp_thread.start()
+    else:
+        mm_state = MatchmakerState(
+            lobby_size=args.lobby_size, heartbeat_timeout=args.heartbeat_timeout
+        )
+        mm_server = TCPServer(
+            host=args.host,
+            port=args.matchmaker_port,
+            request_handler=matchmaker_request_handler,
+            server_state=mm_state,
+        )
+        mm_server.start()
+
+        watchdog_thread = threading.Thread(
+            target=queue_watchdog, args=(mm_state,), daemon=True
+        )
+        watchdog_thread.start()
 
     try:
         while True:

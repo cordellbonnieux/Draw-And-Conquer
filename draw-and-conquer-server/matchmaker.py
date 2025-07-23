@@ -45,7 +45,7 @@ class MatchmakerState(ServerState):
             return len(self.matchmaking_queue)
 
 
-def request_handler(
+def matchmaker_request_handler(
     conn: socket.socket,
     _addr: tuple[str, int],
     data: str,
@@ -142,92 +142,3 @@ def request_handler(
         reply = json.dumps(reply)
         conn.sendall(reply.encode("utf-8"))
         return True
-
-
-def queue_watchdog(server_state: MatchmakerState) -> None:
-    while True:
-        time.sleep(3)
-
-        current_time = time.time()
-
-        dead_players_data = []
-        with server_state.lock:
-            current_queue = list(server_state.matchmaking_queue.items())
-            for player_id, player_data in current_queue:
-                if (
-                    current_time - player_data["last_heartbeat"]
-                    > server_state.heartbeat_timeout
-                ):
-                    dead_players_data.append((player_id, player_data))
-
-        for player_id, player_data in dead_players_data:
-            try:
-                reply = {
-                    "command": "queue_heartbeat",
-                    "status": "error",
-                    "error": "Heartbeat timeout",
-                }
-                reply = json.dumps(reply)
-                player_data["connection"].sendall(reply.encode("utf-8"))
-                player_data["connection"].close()
-            except (ConnectionError, OSError, BrokenPipeError):
-                pass
-
-            server_state.remove_player(player_id)
-
-        while True:
-            with server_state.lock:
-                if len(server_state.matchmaking_queue) < server_state.lobby_size:
-                    break
-
-                game_session = str(uuid.uuid4())
-
-                players_for_game = []
-                for _ in range(server_state.lobby_size):
-                    player_id, player_data = server_state.dequeue_player()
-                    players_for_game.append((player_id, player_data))
-
-            for player_id, player_data in players_for_game:
-                try:
-                    conn = player_data["connection"]
-                    reply = {
-                        "command": "game_start",
-                        "status": "success",
-                        "game_session": game_session,
-                    }
-                    reply = json.dumps(reply)
-                    conn.sendall(reply.encode("utf-8"))
-                    conn.close()
-                except (ConnectionError, OSError, BrokenPipeError):
-                    pass
-
-# Example usage
-# import threading
-
-# from server import TCPServer
-
-
-# def request_handler(
-#     conn: socket.socket,
-#     addr: tuple[str, int],
-#     data: str,
-#     server_state: MatchmakerState,
-# ) -> bool:
-#     return True  # true to keep the connection, false to close it
-
-
-# def queue_watchdog(server_state: MatchmakerState) -> None:
-#     pass
-
-
-# mm_state = MatchmakerState(lobby_size=3, heartbeat_timeout=30)
-# mm_server = TCPServer(
-#     host="0.0.0.0",
-#     port=9437,
-#     request_handler=request_handler,
-#     server_state=mm_state,
-# )
-# mm_server.start()
-
-# watchdog_thread = threading.Thread(target=queue_watchdog, args=(mm_state,), daemon=True)
-# watchdog_thread.start()
