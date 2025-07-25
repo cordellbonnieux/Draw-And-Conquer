@@ -60,12 +60,11 @@ def echo_back(
 ) -> None:
     try:
         _ = json.loads(data)
-
         sock.sendall(data.encode("utf-8"))
+        
     except json.JSONDecodeError:
         reply = {"error": "Invalid JSON format"}
         reply = json.dumps(reply)
-
         sock.sendall(reply.encode("utf-8"))
 
 

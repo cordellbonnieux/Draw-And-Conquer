@@ -43,12 +43,8 @@ function App(): React.JSX.Element {
   }
 
   useEffect(() => {
-    /**
-     *  This works for connecting to the server via localhost for the sake of development
-     * 
-     */
     if (!socket) {
-      socket = new WebSocket('ws://localhost:9999')
+      socket = new WebSocket('ws://localhost:9436')
 
       socket.onopen = () => {
         socket.send(JSON.stringify({"message": "hello server"}))

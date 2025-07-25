@@ -9,7 +9,7 @@ python main.py --host 127.0.0.1 --matchmaker-port 9437 --game-server-port 9438 -
 To start the server in echo mode for testing, use the following command:
 
 ```shell
-python main.py --host 127.0.0.1 --echo-port 9437
+python main.py --host 127.0.0.1 --echo-port 9436
 ```
 
 ## Matchmaker
