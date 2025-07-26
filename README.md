@@ -101,6 +101,16 @@ Player can leave the queue before the game starts, which will remove the player 
 - When a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player.
 - If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again.
 - Each action by any user will trigger a retransmission of the current state of the game board to all players.
+
+#### Winning Conditions
+- **Primary Win Condition**: First player to occupy >= `floor(64/n) + 1` cells wins immediately, where `n` is the number of players
+  - 2 players: 33 cells needed to win
+  - 3 players: 22 cells needed to win
+  - 4 players: 17 cells needed to win
+  - 6 players: 12 cells needed to win
+  - 8 players: 9 cells needed to win
+- **Timeout Win Condition**: If no player reaches the required threshold within the time limit, the player with the highest number of cells occupied wins
+- **Game Duration**: Recommended 4-5 minutes per game session
 - When a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state.
 - If another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state.
 
@@ -160,12 +170,18 @@ Player can leave the queue before the game starts, which will remove the player 
 
 After a game ends, the server sends the final results to all players. The client transitions to the SCOREBOARD state, where the final rankings and scores are displayed.
 
+#### Scoring System
+
+- **Point Calculation**: Each cell occupied by a player earns them 1 point
+- **Total Possible Score**: 64 points (8x8 grid = 64 cells)
+- **Score Display**: Scores are shown as `player_score/64` (e.g., "15/64")
+
 #### Scoreboard Data Structure
 
 The server sends a list of all players and their scores. Each player object contains:
 - `id`: Unique identifier for the player (UUID)
 - `name`: Player's display name
-- `score`: Final score for the game session
+- `score`: Final score for the game session (number of cells occupied)
 
 **Example Server Response:**
 ```json
@@ -173,9 +189,9 @@ The server sends a list of all players and their scores. Each player object cont
   "command": "scoreboard",
   "status": "success",
   "players": [
-    { "id": "uuid-1", "name": "Alice", "score": 120 },
-    { "id": "uuid-2", "name": "Bob", "score": 150 },
-    { "id": "uuid-3", "name": "You", "score": 100 }
+    { "id": "uuid-1", "name": "Alice", "score": 12 },
+    { "id": "uuid-2", "name": "Bob", "score": 15 },
+    { "id": "uuid-3", "name": "You", "score": 10 }
   ],
   "currentPlayerId": "uuid-3"
 }
@@ -184,6 +200,7 @@ The server sends a list of all players and their scores. Each player object cont
 #### Client Rendering
 
 - The client displays a table (scoreboard) with all players, their scores, and their ranking.
+- Scores are displayed in the format `player_score/64` (e.g., "15/64")
 - Players with the same score share the same rank (e.g., 1, 2, 2, 4).
 - The current player's row is highlighted for easy identification.
 - The entire scoreboard is visible, not just the top scores.
@@ -192,9 +209,9 @@ The server sends a list of all players and their scores. Each player object cont
 
 | Rank | Name   | Score |
 |------|--------|-------|
-| 1    | Bob    | 150   |
-| 2    | Alice  | 120   |
-| 3    | You    | 100   |
+| 1    | Bob    | 15/64 |
+| 2    | Alice  | 12/64 |
+| 3    | You    | 10/64 |
 
 If two or more players have the same score, they share the same rank, and the next rank is skipped accordingly.
 

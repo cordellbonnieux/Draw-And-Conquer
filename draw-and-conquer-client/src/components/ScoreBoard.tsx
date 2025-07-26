@@ -61,7 +61,7 @@ export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps
             >
               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{ranks[idx]}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.name}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.score}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.score}/64</td>
             </tr>
           ))}
         </tbody>

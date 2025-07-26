@@ -15,7 +15,7 @@ enum State {
 
 function App(): React.JSX.Element {
   let socket: WebSocket
-  const [state, setState] = useState<State>(State.QUEUE)
+  const [state, setState] = useState<State>(State.SCOREBOARD)
 
   const body: () => React.JSX.Element = () => {
     if (state == State.QUEUE)
@@ -74,12 +74,12 @@ function App(): React.JSX.Element {
   })
 
   const players = [
-    { id: '1', name: 'Alice', score: 120 },
-    { id: '2', name: 'Bob', score: 150 },
-    { id: '3', name: 'You', score: 100 },
-    { id: '4', name: 'Jane', score: 100 },
-    { id: '200', name: 'Jim', score: 100 },
-    { id: '5', name: 'Tim', score: 1100 },
+    { id: '1', name: 'Alice', score: 12 },
+    { id: '2', name: 'Bob', score: 15 },
+    { id: '3', name: 'You', score: 10 },
+    { id: '4', name: 'Jane', score: 10 },
+    { id: '200', name: 'Jim', score: 8 },
+    { id: '5', name: 'Tim', score: 9 },
   ];
   const currentPlayerId = '3';
 
