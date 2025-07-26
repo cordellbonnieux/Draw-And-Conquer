@@ -1,9 +1,9 @@
 import json
-import socket
 import time
 import uuid
 
 from matchmaker import MatchmakerState
+from server import WebSocketInterface
 
 
 def queue_watchdog(server_state: MatchmakerState) -> None:
@@ -24,17 +24,18 @@ def queue_watchdog(server_state: MatchmakerState) -> None:
 
         for player_id, player_data in dead_players_data:
             try:
-                conn: socket.socket = player_data["connection"]
+                ws: WebSocketInterface = player_data["ws"]
 
                 reply = {
                     "command": "queue_heartbeat",
                     "status": "error",
                     "error": "Heartbeat timeout",
                 }
-                reply = json.dumps(reply)
-                conn.sendall(reply.encode("utf-8"))
-                conn.close()
+                reply_json = json.dumps(reply)
+                ws.send(reply_json)
+                ws.close()
             except (ConnectionError, OSError, BrokenPipeError):
+                # Connection already closed or broken
                 pass
 
             server_state.remove_player(player_id)
@@ -53,14 +54,15 @@ def queue_watchdog(server_state: MatchmakerState) -> None:
 
             for player_id, player_data in players_for_game:
                 try:
-                    conn: socket.socket = player_data["connection"]
+                    ws: WebSocketInterface = player_data["ws"]
                     reply = {
                         "command": "game_start",
                         "status": "success",
                         "game_session": game_session,
                     }
-                    reply = json.dumps(reply)
-                    conn.sendall(reply.encode("utf-8"))
-                    conn.close()
+                    reply_json = json.dumps(reply)
+                    ws.send(reply_json)
+                    ws.close()
                 except (ConnectionError, OSError, BrokenPipeError):
+                    # Connection already closed or broken
                     pass

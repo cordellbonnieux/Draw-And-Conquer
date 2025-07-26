@@ -6,7 +6,7 @@ import time
 
 from matchmaker import MatchmakerState, matchmaker_request_handler
 from queue_watchdog import queue_watchdog
-from server import ServerState, TCPServer
+from server import ServerState, TCPServer, WebSocketInterface
 
 
 def parse_args():
@@ -53,19 +53,19 @@ def parse_args():
 
 
 def echo_back(
-    sock: socket.socket,
+    ws: WebSocketInterface,
     _addr: tuple[str, int],
     data: str,
     _server_state: ServerState,
 ) -> None:
     try:
         _ = json.loads(data)
-        sock.sendall(data.encode("utf-8"))
-        
+        ws.send(data)
+
     except json.JSONDecodeError:
         reply = {"error": "Invalid JSON format"}
-        reply = json.dumps(reply)
-        sock.sendall(reply.encode("utf-8"))
+        reply_json = json.dumps(reply)
+        ws.send(reply_json)
 
 
 def main():
@@ -80,7 +80,7 @@ def main():
                 "Echo port must be different from matchmaker and games server ports."
             )
 
-        tcp = TCPServer(args.host, args.echo_port, echo_back, ServerState())
+        tcp = TCPServer(args.host, args.echo_port, echo_back, ServerState(), "echo-ws-key")
         tcp_thread = threading.Thread(target=tcp.start, daemon=True)
         tcp_thread.start()
     else:
@@ -92,6 +92,7 @@ def main():
             port=args.matchmaker_port,
             request_handler=matchmaker_request_handler,
             server_state=mm_state,
+            ws_key="matchmaker-ws-key",
         )
         mm_server.start()
 

@@ -1,10 +1,8 @@
 import json
-import socket
 import time
-import uuid
 from collections import OrderedDict
 
-from server import ServerState
+from server import ServerState, WebSocketInterface
 
 
 class MatchmakerState(ServerState):
@@ -14,11 +12,11 @@ class MatchmakerState(ServerState):
         self.lobby_size = lobby_size
         self.heartbeat_timeout = heartbeat_timeout
 
-    def enqueue_player(self, player_id: str, conn: socket.socket) -> None:
+    def enqueue_player(self, player_id: str, ws: WebSocketInterface) -> None:
         with self.lock:
             self.matchmaking_queue[player_id] = {
                 "last_heartbeat": time.time(),
-                "connection": conn,
+                "ws": ws,
             }
 
     def dequeue_player(self) -> tuple[str, dict] | None:
@@ -46,7 +44,7 @@ class MatchmakerState(ServerState):
 
 
 def matchmaker_request_handler(
-    conn: socket.socket,
+    ws: WebSocketInterface,
     _addr: tuple[str, int],
     data: str,
     server_state: MatchmakerState,
@@ -66,15 +64,15 @@ def matchmaker_request_handler(
             if server_state.is_player_in_queue(player_id):
                 raise ValueError("enqueue", "Player already in queue")
 
-            server_state.enqueue_player(player_id, conn)
+            server_state.enqueue_player(player_id, ws)
             queue_length = server_state.get_queue_length()
             reply = {
                 "command": "enqueue",
                 "status": "success",
                 "queue_length": queue_length,
             }
-            reply = json.dumps(reply)
-            conn.sendall(reply.encode("utf-8"))
+            reply_json = json.dumps(reply)
+            ws.send(reply_json)
             return True
 
         elif command == "queue_heartbeat":
@@ -88,8 +86,8 @@ def matchmaker_request_handler(
                 "status": "success",
                 "queue_length": queue_length,
             }
-            reply = json.dumps(reply)
-            conn.sendall(reply.encode("utf-8"))
+            reply_json = json.dumps(reply)
+            ws.send(reply_json)
             return True
 
         elif command == "remove_from_queue":
@@ -100,8 +98,8 @@ def matchmaker_request_handler(
                 "command": "remove_from_queue",
                 "status": "success",
             }
-            reply = json.dumps(reply)
-            conn.sendall(reply.encode("utf-8"))
+            reply_json = json.dumps(reply)
+            ws.send(reply_json)
             server_state.remove_player(player_id)
             return False
 
@@ -111,8 +109,8 @@ def matchmaker_request_handler(
                 "status": "error",
                 "error": "Unknown command",
             }
-            reply = json.dumps(reply)
-            conn.sendall(reply.encode("utf-8"))
+            reply_json = json.dumps(reply)
+            ws.send(reply_json)
             return True
 
     except json.JSONDecodeError:
@@ -121,8 +119,8 @@ def matchmaker_request_handler(
             "status": "error",
             "error": "Invalid JSON format",
         }
-        reply = json.dumps(reply)
-        conn.sendall(reply.encode("utf-8"))
+        reply_json = json.dumps(reply)
+        ws.send(reply_json)
         return True
 
     except ValueError as e:
@@ -139,6 +137,6 @@ def matchmaker_request_handler(
                 "status": "error",
                 "error": str(e),
             }
-        reply = json.dumps(reply)
-        conn.sendall(reply.encode("utf-8"))
+        reply_json = json.dumps(reply)
+        ws.send(reply_json)
         return True
