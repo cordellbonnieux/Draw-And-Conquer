@@ -25,12 +25,10 @@ Matchmaking server is always standby on port 9437 for players to enqueue. When p
 }
 // Server -> Client Enqueue Response
 {
-    "command": "enqueue",
     "status": "success",
     "queue_length": 2,
 }
 {
-    "command": "enqueue",
     "status": "error",
     "error": "abcdefg",
 }
@@ -46,23 +44,16 @@ On player enqueue, matchmaking server enqueue the UUID and client starts heartbe
 }
 // Server -> Client Heartbeat
 {
-    "uuid": "player-uuid",
-    "command": "queue_heartbeat",
     "status": "success",
     "queue_length": 2,
 }
 {
-    "uuid": "player-uuid",
-    "command": "queue_heartbeat",
     "status": "error",
     "error": "abcdefg",
 }
 // Server -> Client Heartbeat Timeout
 {
-    "uuid": "player-uuid",
-    "command": "queue_heartbeat",
-    "status": "error",
-    "error": "Heartbeat timeout, removed from queue",
+    "command": "heartbeat_timeout"
 }
 ```
 
@@ -71,9 +62,7 @@ If the queue length is greater than n, queue server will start a game server and
 ```json
 // Server -> Client Game Start Notification
 {
-    "uuid": "player-uuid",
     "command": "game_start",
-    "status": "success",
     "game_session_uuid": "game-session-uuid",
 }
 ```
@@ -90,13 +79,9 @@ Player can leave the queue before the game starts, which will remove the player 
 }
 // Server -> Client Dequeue Response
 {
-    "uuid": "player-uuid",
-    "command": "remove_from_queue",
-    "status": "success",
+    "status": "success"
 }
 {
-    "uuid": "player-uuid",
-    "command": "remove_from_queue",
     "status": "error",
     "error": "abcdefg",
 }
@@ -117,16 +102,10 @@ The player will first request a colour for their pen.
 }
 // Server -> Client Pen Colour Response
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "player-uuid",
-    "command": "pen_colour_response",
     "status": "success",
     "colour": "red",
 }
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "player-uuid",
-    "command": "pen_colour_response",
     "status": "error",
     "error": "abcdefg",
 }
@@ -137,11 +116,8 @@ After all players have requested their pen colours, the game server will notify 
 ```json
 // Server -> Client Current Players Notification
 {
-    "game_session_uuid": "game-session-uuid",
-    "uuid": "player-uuid",
     "command": "current_players",
-    "status": "success",
-    "colours": {
+    "players": {
         "uuid-1": {
             "colour": "red",
             "name": "Player 1",
@@ -157,19 +133,18 @@ After all players have requested their pen colours, the game server will notify 
     }
 }
 
-If player goes one minute without sending any pen colour request, they will be considered inactive and removed from the game session. Their connection will be closed. If less than m players in the game session after the removal, the game session will be prematurely ended and all players will be notified.
+If player goes one minute without sending any pen colour request, they will be considered inactive and removed from the game session. Their connection will be closed. If less than m players in the game session after the removal, the game session will be prematurely ended and all players will be notified. After the game starts, no further inactivate checks will be performed.
 
 ```json
 // Server -> Client Inactive Player Notification
 {
-    "game_session_uuid": "game-session-uuid",
-    "uuid": "player-uuid",
-    "command": "not-enough_players",
-    "status": "success",
+    "command": "inactive_player",
+}
+// Server -> Client Not Enough Players Notification
+{
+    "command": "not_enough_players",
 }
 ```
-
-The players that experienced the premature end may requeue for a priority queue. The priority queue will be available for a limited time. The client will only need to send a normal enqueue request, the server will recognize the UUID and place the player in the priority queue.
 
 When the player starts holding the pen, they will send a pen down request to the game server. This request will lock the tile for the player if it is not already locked by another player. If the tile is already locked, the server will return an error.
 
@@ -183,15 +158,9 @@ When the player starts holding the pen, they will send a pen down request to the
 }
 // Server -> Client Pen Down Response
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "player-uuid",
-    "command": "pen_down_response",
-    "status": "success",
+    "status": "success"
 }
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "player-uuid",
-    "command": "pen_down_response",
     "status": "error",
     "error": "abcdefg",
 }
@@ -202,8 +171,6 @@ The server will then notify all other players in the game session of the pen dow
 ```json
 // Server -> Client Pen Down Broadcast
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "other-player-uuid",
     "command": "pen_down_broadcast",
     "index": 0,
     "colour": "red",
@@ -223,17 +190,9 @@ When the player stops holding the pen, they will send a pen up request to the ga
 }
 // Server -> Client Pen Up Response
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "player-uuid",
-    "command": "pen_up_tile_claimed",
-    // "command": "pen_up_tile_not_claimed",
-    "status": "success",
+    "status": "success"
 }
 {
-    "game_session_uuid": "game-session-uuid",   
-    "uuid": "player-uuid",
-    "command": "pen_up_tile_claimed",
-    // "command": "pen_up_tile_not_claimed",
     "status": "error",
     "error": "abcdefg",
 }
@@ -244,8 +203,6 @@ The server will then notify all other players in the game session of the pen up 
 ```json
 // Server -> Client Pen Up Broadcast
 {
-    "game_session_uuid": "game-session-uuid",
-    "uuid": "other-player-uuid",
     "command": "pen_up_broadcast",
     "index": 0,
     "colour": "red",
@@ -257,8 +214,6 @@ After each successful tile claimed, the server will check if the player has clai
 ```json
 // Server -> Client Game Win Notification
 {
-    "game_session_uuid": "game-session-uuid",
-    "uuid": "player-uuid",
     "command": "game_win",
     "winner_uuid": "player-uuid",
     "winner_name": "Player 1",
