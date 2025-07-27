@@ -349,6 +349,9 @@ def game_server_request_handler(
         # Register websocket for this player
         session.register_websocket(player_id, ws)
 
+        if session.game_ended:
+            raise ValueError("Game has already ended")
+
         # Handle different commands
         if command == "pen_colour_request":
             colour = session.assign_colour(player_id)

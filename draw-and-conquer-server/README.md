@@ -219,3 +219,25 @@ After each successful tile claimed, the server will check if the player has clai
     "winner_name": "Player 1",
     "winner_colour": "red",
 }
+
+If player sends any request after the game has ended, the server will return an error.
+
+```json
+// Server -> Client Game Ended Error
+{
+    "status": "error",
+    "error": "Game has already ended"
+}
+```
+
+### Unknown Command Error
+
+If the game server receives a command that it does not recognize, it will return an error.
+
+```json
+// Server -> Client Unknown Command Error
+{
+    "status": "error",
+    "error": "Unknown command"
+}
+```
