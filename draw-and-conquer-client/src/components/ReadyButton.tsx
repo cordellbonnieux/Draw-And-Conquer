@@ -1,21 +1,34 @@
 import React, { useRef, useEffect, useState } from "react"
 import { sendCommand } from '../wsClient';
 
-export default function ReadyButton(): React.JSX.Element {
+type ReadyButtonProps = {
+    uuid: string;
+    socket: WebSocket | null;
+};
+
+export default function ReadyButton({ uuid, socket }: ReadyButtonProps): React.JSX.Element {
     // TODO ask server for info
-    const { v4: uuidv4 } = require('uuid');
     const [ready, setReady] = useState<boolean>(false)
-    const [uuid] = useState(() => uuidv4());
 
     function toggleReady() {
-        // TODO tell server when ready is toggled
-        
-        if (!ready){
-            sendCommand(uuid, "enqueue", "")
-            setReady(true)
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            console.warn("WebSocket not ready");
+            return;
+        }
+
+        if (!ready) {
+            socket.send(JSON.stringify({
+                uuid: uuid,
+                command: "enqueue",
+                name: "Name"
+            }));
+            setReady(true);
         } else {
-            sendCommand(uuid, "dequeue", "")
-            setReady(false)
+            socket.send(JSON.stringify({
+                uuid: uuid,
+                command: "remove_from_queue"
+            }));
+            setReady(false);
         }
     }
 

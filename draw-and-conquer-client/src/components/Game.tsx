@@ -9,11 +9,13 @@ enum SquareState {
   OPPONENT_TAKEN      
 };
 
-const DenyAndConquerGame: React.FC = () => {
-  const { v4: uuidv4 } = require('uuid');
+type GameProps = {
+  uuid: string;
+};
+
+const DenyAndConquerGame: React.FC<GameProps> = ({ uuid }) => {
   const GRID_SIZE = 8;
   const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
-  const [uuid] = useState(() => uuidv4());
   const [color, setColor] = useState(["#FAB972", "#FFA500"]);
   const [opponentColor, setOpponentColor] = useState(["#FFA500", "#FAB972"]);
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null);
@@ -74,7 +76,7 @@ const DenyAndConquerGame: React.FC = () => {
 
   // Assign color for the current player
   useEffect(() => {
-    const socket = new WebSocket('ws://205.250.26.138/140');
+    const socket = new WebSocket('ws://localhost:9438');
     sendCommand("ASSIGN_COLOR", "");
 
     socket.onmessage = (event: MessageEvent) => {
@@ -97,7 +99,7 @@ const DenyAndConquerGame: React.FC = () => {
 
   // Listen for other opponents activities and board updates
   useEffect(() => {
-    const socket = new WebSocket('ws://205.250.26.138/140');
+    const socket = new WebSocket('ws://localhost:9438');
     sendCommand("UPDATE_BOARD", "");
 
     socket.onmessage = (event: MessageEvent) => {

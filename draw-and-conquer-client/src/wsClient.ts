@@ -1,4 +1,4 @@
-const socket = new WebSocket('ws://205.250.26.138/140')
+const socket = new WebSocket('ws://localhost:9438')
 
 export function sendCommand(uuid: string, command: string, data: any = {}) {
     if (socket && socket.readyState === WebSocket.OPEN) {
