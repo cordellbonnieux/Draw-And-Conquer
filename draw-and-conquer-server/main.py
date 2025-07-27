@@ -51,10 +51,10 @@ def parse_args():
         help="Number of tiles in the game",
     )
     parser.add_argument(
-        "--color-selection-timeout",
+        "--colour-selection-timeout",
         type=int,
-        default=30,
-        help="Color selection timeout in seconds",
+        default=60,
+        help="Colour selection timeout in seconds",
     )
     parser.add_argument(
         "--echo-port",
@@ -123,7 +123,7 @@ def start_servers(args) -> None:
 
     # Start watchdog processes
     queue_watchdog_instance = QueueWatchdog(
-        matchmaker_state, game_state, args.num_tiles, args.color_selection_timeout
+        matchmaker_state, game_state, args.num_tiles, args.colour_selection_timeout
     )
     game_watchdog_instance = GameSessionWatchdog(game_state)
 

@@ -17,7 +17,7 @@ class QueueWatchdog:
         matchmaker_state: MatchmakerState,
         game_state: GameServerState,
         num_tiles: int,
-        color_selection_timeout: int,
+        colour_selection_timeout: int,
     ):
         """
         Initialize the queue watchdog.
@@ -29,7 +29,7 @@ class QueueWatchdog:
         self.matchmaker_state = matchmaker_state
         self.game_state = game_state
         self.num_tiles = num_tiles
-        self.color_selection_timeout = color_selection_timeout
+        self.colour_selection_timeout = colour_selection_timeout
 
     def run(self) -> None:
         """
@@ -116,7 +116,7 @@ class QueueWatchdog:
                     player_ids,
                     player_names,
                     self.num_tiles,
-                    self.color_selection_timeout,
+                    self.colour_selection_timeout,
                 )
 
                 # Notify players that the game has started

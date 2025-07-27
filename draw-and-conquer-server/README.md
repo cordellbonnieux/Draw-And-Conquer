@@ -3,7 +3,7 @@
 ## Start up
 
 ```shell
-python main.py --host 127.0.0.1 --matchmaker-port 9437 --game-server-port 9438 --lobby-size 3 --heartbeat-timeout 30
+python main.py --host 127.0.0.1 --matchmaker-port 9437 --game-server-port 9438 --lobby-size 3 --heartbeat-timeout 30 --num_tiles 64 --colour-selection-timeout 60
 ```
 
 To start the server in echo mode for testing, use the following command:

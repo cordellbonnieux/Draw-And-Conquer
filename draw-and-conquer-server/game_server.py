@@ -16,7 +16,7 @@ class GameSession:
         player_ids: List[str],
         player_names: Dict[str, str],
         num_tiles: int,
-        color_selection_timeout: int,
+        colour_selection_timeout: int,
     ):
         """
         Initialize a new game session.
@@ -26,13 +26,13 @@ class GameSession:
             player_ids (List[str]): List of player unique identifiers
             player_names (Dict[str, str]): Mapping of player IDs to display names
             num_tiles (int): Total number of tiles in the game
-            color_selection_timeout (int): Timeout for color selection phase in seconds
+            colour_selection_timeout (int): Timeout for colour selection phase in seconds
         """
         self.game_session_uuid = game_session_uuid
         self.player_ids = player_ids
         self.player_names = player_names
         self.num_tiles = num_tiles
-        self.color_selection_timeout = color_selection_timeout
+        self.colour_selection_timeout = colour_selection_timeout
         self.tiles_to_win = (num_tiles // len(player_ids)) + 1
 
         self.available_colours = [
@@ -85,13 +85,13 @@ class GameSession:
 
     def assign_colour(self, player_id: str) -> str:
         """
-        Assign a color to a player.
+        Assign a colour to a player.
 
         Args:
             player_id (str): Unique identifier for the player
 
         Returns:
-            str: The assigned color for the player
+            str: The assigned colour for the player
         """
         if player_id in self.player_colours:
             return self.player_colours[player_id]
@@ -107,10 +107,10 @@ class GameSession:
 
     def all_colours_assigned(self) -> bool:
         """
-        Check if all players have been assigned colors.
+        Check if all players have been assigned colours.
 
         Returns:
-            bool: True if all players have assigned colors, False otherwise
+            bool: True if all players have assigned colours, False otherwise
         """
         return len(self.colours_requested) == len(self.player_ids)
 
@@ -126,7 +126,7 @@ class GameSession:
 
     def get_inactive_players(self) -> List[str]:
         """
-        Get list of players who haven't requested a color and are inactive.
+        Get list of players who haven't requested a colour and are inactive.
 
         Returns:
             List[str]: List of inactive player IDs
@@ -139,7 +139,7 @@ class GameSession:
         for player_id in self.player_ids:
             if player_id not in self.colours_requested:
                 time_since_request = current_time - self.last_colour_request[player_id]
-                if time_since_request > self.color_selection_timeout:
+                if time_since_request > self.colour_selection_timeout:
                     inactive_players.append(player_id)
         return inactive_players
 
@@ -248,7 +248,7 @@ class GameServerState(ServerState):
         player_ids: List[str],
         player_names: Dict[str, str],
         num_tiles: int,
-        color_selection_timeout: int,
+        colour_selection_timeout: int,
     ) -> None:
         """
         Create a new game session.
@@ -258,7 +258,7 @@ class GameServerState(ServerState):
             player_ids (List[str]): List of player unique identifiers
             player_names (Dict[str, str]): Mapping of player IDs to display names
             num_tiles (int): Total number of tiles in the game
-            color_selection_timeout (int): Timeout for color selection phase in seconds
+            colour_selection_timeout (int): Timeout for colour selection phase in seconds
         """
         with self.lock:
             self.game_sessions[game_session_uuid] = GameSession(
@@ -266,7 +266,7 @@ class GameServerState(ServerState):
                 player_ids,
                 player_names,
                 num_tiles,
-                color_selection_timeout,
+                colour_selection_timeout,
             )
 
     def get_game_session(self, game_session_uuid: str) -> Optional[GameSession]:
@@ -417,7 +417,7 @@ def game_server_request_handler(
             broadcast_message = {
                 "command": "pen_up_broadcast",
                 "index": tile_index,
-                "color": session.player_colours[player_id],
+                "colour": session.player_colours[player_id],
             }
             session.broadcast_message(broadcast_message, player_id)
 
@@ -427,7 +427,7 @@ def game_server_request_handler(
                     "command": "game_win",
                     "winner_uuid": session.winner,
                     "winner_name": session.player_names[session.winner],
-                    "winner_color": session.player_colours[session.winner],
+                    "winner_colour": session.player_colours[session.winner],
                 }
                 session.broadcast_message(game_win_message)
 
