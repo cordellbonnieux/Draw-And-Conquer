@@ -14,25 +14,27 @@ enum State {
 }
 
 function App(): React.JSX.Element {
-  let socket: WebSocket
-  const [state, setState] = useState<State>(State.SCOREBOARD)
+  const { v4: uuidv4 } = require('uuid');
+  const [uuid] = useState(() => uuidv4());
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [state, setState] = useState<State>(State.QUEUE)
 
   const body: () => React.JSX.Element = () => {
     if (state == State.QUEUE)
       return <div>
         <PlayerQueueDisplay></PlayerQueueDisplay>
-        <ReadyButton></ReadyButton>
+        <ReadyButton uuid={uuid} socket={socket}></ReadyButton>
       </div>
 
     else if (state == State.GAME)
       return <div>TODO GAME
-        <DenyAndConquerGame/>
+        <DenyAndConquerGame  uuid={uuid}/>
       </div>
 
     else if (state == State.SCOREBOARD)
       return (<div> 
         <h2>Scoreboard</h2>
-        <ScoreBoard players={players} currentPlayerId={currentPlayerId}/>
+        <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId}/>
       </div>) 
 
     else if (state == State.WAIT)
@@ -44,14 +46,14 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     if (!socket) {
-      socket = new WebSocket('ws://localhost:9436')
+      const ws = new WebSocket('ws://localhost:9437');
 
-      socket.onopen = () => {
-        socket.send(JSON.stringify({"message": "hello server"}))
+      ws.onopen = () => {
+        ws.send(JSON.stringify({"message": "hello server"}))
         console.log('sent the server a message')
       }
 
-      socket.onmessage = (event: MessageEvent) => {
+      ws.onmessage = (event: MessageEvent) => {
         const data = JSON.parse(event.data)
         console.log('server says: ', data)
         if (data.state == 'QUEUE')
@@ -64,14 +66,13 @@ function App(): React.JSX.Element {
           setState(State.WAIT)
       }
 
-      socket.onerror = (error: Event) => {
+      ws.onerror = (error: Event) => {
         console.error('Websocket Error: ', error)
       }
 
-      if (socket.readyState === WebSocket.OPEN)
-        socket.close()
+      setSocket(ws);
     }
-  })
+  }, [socket])
 
   const players = [
     { id: '1', name: 'Alice', score: 12 },

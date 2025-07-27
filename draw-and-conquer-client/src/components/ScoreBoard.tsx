@@ -7,11 +7,12 @@ export type Player = {
 };
 
 export type ScoreBoardProps = {
+  uuid: string,
   players: Player[];
   currentPlayerId: string;
 };
 
-export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps) {
+export default function ScoreBoard({ uuid, players, currentPlayerId }: ScoreBoardProps) {
   // Sort players by score descending
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
