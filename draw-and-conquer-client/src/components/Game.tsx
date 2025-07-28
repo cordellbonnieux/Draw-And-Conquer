@@ -1,38 +1,45 @@
 import React, { useEffect, useState } from 'react';
-
-enum SquareState { 
-  WHITE,              
-  IN_PROCESS ,        
-  COMPLETE,              
-  OPPONENT_IN_PROCESS,
-  OPPONENT_TAKEN      
-};
+import ScoreBoard from './ScoreBoard';
 
 type GameProps = {
   uuid: string;
   game_session_uuid: string;
 };
 
+//////////////////////////// examples //////////////////////////////////////////
+const players = [
+  { id: '1', name: 'Alice', score: 12 },
+  { id: '2', name: 'Bob', score: 15 },
+  { id: '3', name: 'You', score: 10 },
+  { id: '4', name: 'Jane', score: 10 },
+  { id: '200', name: 'Jim', score: 8 },
+  { id: '5', name: 'Tim', score: 9 },
+];
+const currentPlayerId = '3';
+////////////////////////////////////////////////////////////////////////////////
+
 const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) => {
   const GRID_SIZE = 8;
   const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
   const [color, setColor] = useState(["#FAB972", "#FFA500"]);
-  const [opponentColor, setOpponentColor] = useState(["#FFA500", "#FAB972"]);
+  const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null);
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null);
   const [gameSocket, setGameSocket] = useState<WebSocket | null>(null);
+  const [gameEnd, setGameEnd] = useState(false);
 
   // Intialize the state of each square on the board
-  const [squareStates, setSquareStates] = useState<SquareState[]>(
-    Array(TOTAL_SQUARES).fill(SquareState.WHITE)
+  const [squareStates, setSquareStates] = useState<string[]>(
+    Array(TOTAL_SQUARES).fill("#ffffff")
   );
 
   const handleMouseDown = (index: number): void => {
-    if (squareStates[index] !== SquareState.WHITE) return;
+    if (squareStates[index] !== "#ffffff") return;
 
     setMouseDownTime(Date.now());
+    setMouseDownIndex(index); 
 
     const newStates = [...squareStates];
-    newStates[index] = SquareState.IN_PROCESS;
+    newStates[index] = color[0];
     //Update Board
     setSquareStates(newStates);
 
@@ -48,15 +55,17 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) =>
     }    
   };
 
-  const handleMouseUp = (index: number) => {
+  const handleMouseUp = () => {
+    if (mouseDownIndex === null) return;
     const duration = Date.now() - (mouseDownTime ?? 0);
-    setMouseDownTime(null);
-
-    let newStatus;
+    const index = mouseDownIndex;
     const newStates = [...squareStates];
+    setMouseDownTime(null);
+    setMouseDownIndex(null)
+
     // If held down more than 1 second, mark as complete, else fail
     if (duration > 1000){
-      newStates[index] = SquareState.COMPLETE;
+      newStates[index] = color[1];
       if (gameSocket?.readyState === WebSocket.OPEN) {
         gameSocket.send(JSON.stringify({
           uuid,
@@ -68,7 +77,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) =>
         console.warn("Socket not ready. Current state:", gameSocket?.readyState);
       } 
     } else {
-      newStates[index] = SquareState.WHITE;
+      newStates[index] = "#ffffff";
       if (gameSocket?.readyState === WebSocket.OPEN) {
         gameSocket.send(JSON.stringify({
           uuid,
@@ -85,19 +94,15 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) =>
   };
 
   // Get the background color of a square 
-  const getBackgroundColor = (state: SquareState): string => {
-    switch (state) {
-      case SquareState.WHITE:
-        return '#ffffff';
-      case SquareState.IN_PROCESS:
-        return color[0]; 
-      case SquareState.COMPLETE:
-        return color[1]; 
-      case SquareState.OPPONENT_IN_PROCESS:
-        return opponentColor[0];  
-      case SquareState.OPPONENT_TAKEN:
-        return opponentColor[1];  
-    }
+  const getColor = (colour:string) => {
+    if (colour == 'blue') return ["#00FFFF", "#0000FF"];
+    else if (colour == 'green') return["#CCFFCC", "#008000"];
+    else if (colour == 'red') return["#F88379", "#EE4B2B"];
+    else if (colour == 'orange') return["#FAB972", "#FFA500"];
+    else if (colour == 'purple') return["#D8BFD8", "#800080"];
+    else if (colour == 'pink') return["#FFB6C1", "#FF1493"];
+    else if (colour == 'cyan') return["#E0FFFF", "#00CED1"];
+    return ["#ffffff", "#cccccc"];
   };
 
   useEffect(() => {
@@ -119,10 +124,38 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) =>
         console.log('server says: ', data);
 
         if (data.command == "pen_colour_response"){
-          if (data.colour == 'blue') setColor(["#00FFFF", "#0000FF"]);
-          else if (data.colour == 'green') setColor(["#CCFFCC", "#008000"]);
-          else if (data.colour == 'red') setColor(["#F88379", "#EE4B2B"]);
-          else if (data.colour == 'orange') setColor(["#FAB972", "#FFA500"]);
+          setColor(getColor(data.colour))
+        } 
+        else if (data.command == "pen_up_broadcast"){
+          let index = data.index;
+          let color = getColor(data.colour);
+          // Other players' claim failed
+          if (!data.status){
+            setSquareStates(prev => {
+              const updated = [...prev];  
+              updated[index] = "#ffffff";          
+              return updated;
+            })}
+          // Other players' claim success 
+          else {
+            setSquareStates(prev => {
+              const updated = [...prev];  
+              updated[index] = color[1];          
+              return updated;
+            })
+          }
+        }
+        else if (data.command == "pen_down_broadcast"){
+          let index = data.index;
+          let color = getColor(data.colour);
+          setSquareStates(prev => {
+            const updated = [...prev];  
+            updated[index] = color[0];          
+            return updated;
+          });
+        }
+        else if (data.command == "game_win"){
+          setGameEnd(true)
         }
       } catch {
         console.log('Non-JSON message:', event.data);
@@ -134,6 +167,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) =>
     <div>
       <h2>Deny and Conquer - Game Board</h2>
 
+      {!gameEnd &&
       <div>
         {/* Draw Game Board */}
         <div
@@ -145,25 +179,32 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) =>
             margin: 'auto',
           }}
         >
-          {squareStates.map((state, index) => (
+          {squareStates.map((_, index) => (
             <div
               key={index}
               style={{
                 border: '1px solid black',
                 height: '40px',
-                backgroundColor: getBackgroundColor(state),
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
                 cursor: 'pointer',
+                backgroundColor: squareStates[index],
               }}
               onMouseDown={() => handleMouseDown(index)}
-              onMouseUp={() => handleMouseUp(index)}
+              onMouseUp={() => handleMouseUp()}
             >
             </div>
           ))}
         </div>
-      </div>
+      </div>}
+
+      {gameEnd &&
+      <div>
+      <h2>Scoreboard</h2>
+        <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId}/>
+      </div>}
+
     </div>
   );
 };
