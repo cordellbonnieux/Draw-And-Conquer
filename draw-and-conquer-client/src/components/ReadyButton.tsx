@@ -4,9 +4,10 @@ import { sendCommand } from '../wsClient';
 type ReadyButtonProps = {
     uuid: string;
     socket: WebSocket | null;
+    playerName: string;
 };
 
-export default function ReadyButton({ uuid, socket }: ReadyButtonProps): React.JSX.Element {
+export default function ReadyButton({ uuid, socket, playerName }: ReadyButtonProps): React.JSX.Element {
     // TODO ask server for info
     const [ready, setReady] = useState<boolean>(false)
 
@@ -20,7 +21,7 @@ export default function ReadyButton({ uuid, socket }: ReadyButtonProps): React.J
             socket.send(JSON.stringify({
                 uuid: uuid,
                 command: "enqueue",
-                name: "Name"
+                name: playerName
             }));
             setReady(true);
         } else {

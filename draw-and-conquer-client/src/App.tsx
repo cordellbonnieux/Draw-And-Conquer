@@ -4,6 +4,7 @@ import './App.css';
 import TitleBar from './components/TitleBar';
 import PlayerQueueDisplay from './components/PlayerQueueDisplay';
 import ReadyButton from './components/ReadyButton';
+import NameInput from './components/NameInput';
 import DenyAndConquerGame from './components/Game';
 import ScoreBoard from './components/ScoreBoard';
 enum State {
@@ -19,13 +20,24 @@ function App(): React.JSX.Element {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [state, setState] = useState<State>(State.QUEUE)
   const [game_session_uuid, setGame_session_uuid] = useState("")
+  const [playerName, setPlayerName] = useState<string>("")
+  const [hasEnteredName, setHasEnteredName] = useState<boolean>(false)
+
+  const handleNameSubmit = (name: string) => {
+    setPlayerName(name);
+    setHasEnteredName(true);
+  };
 
   const body: () => React.JSX.Element = () => {
-    if (state == State.QUEUE)
+    if (state == State.QUEUE) {
+      if (!hasEnteredName) {
+        return <NameInput onNameSubmit={handleNameSubmit} isVisible={true} />
+      }
       return <div>
-        <PlayerQueueDisplay></PlayerQueueDisplay>
-        <ReadyButton uuid={uuid} socket={socket}></ReadyButton>
+        <PlayerQueueDisplay playerName={playerName}></PlayerQueueDisplay>
+        <ReadyButton uuid={uuid} socket={socket} playerName={playerName}></ReadyButton>
       </div>
+    }
 
     else if (state == State.GAME)
       return <div>TODO GAME
