@@ -119,11 +119,13 @@ class QueueWatchdog:
                     self.colour_selection_timeout,
                 )
 
+                colors = ['red', 'blue', 'green', 'orange']
                 # Notify players that the game has started
-                for player_ws in player_wss:
+                for player_ws, color in zip(player_wss, colors):
                     try:
                         game_start_reply = {
                             "command": "game_start",
+                            "color": color,
                             "game_session_uuid": game_session_uuid,
                         }
                         player_ws.send(json.dumps(game_start_reply))

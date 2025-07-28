@@ -11,12 +11,12 @@ enum SquareState {
 
 type GameProps = {
   uuid: string;
+  color: string[];
 };
 
-const DenyAndConquerGame: React.FC<GameProps> = ({ uuid }) => {
+const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, color }) => {
   const GRID_SIZE = 8;
   const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
-  const [color, setColor] = useState(["#FAB972", "#FFA500"]);
   const [opponentColor, setOpponentColor] = useState(["#FFA500", "#FAB972"]);
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null);
 
@@ -73,29 +73,6 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid }) => {
         return opponentColor[1];  
     }
   };
-
-  // Assign color for the current player
-  useEffect(() => {
-    const socket = new WebSocket('ws://localhost:9438');
-    sendCommand("ASSIGN_COLOR", "");
-
-    socket.onmessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('server says: ', data);
-        if (data.color == 'blue')
-          setColor(["#0000FF", "#00FFFF"]);
-        else if (data.color == 'green')
-          setColor(["#008000", "#CCFFCC"]);
-        else if (data.color == 'red')
-          setColor(["#EE4B2B", "#F88379"]);
-        else if (data.color == 'orange')
-          setColor(["#FFA500", "#FAB972"]);
-      } catch {
-        console.log('Received non-JSON message:', event.data);
-      }
-    }
-  }, []);
 
   // Listen for other opponents activities and board updates
   useEffect(() => {
