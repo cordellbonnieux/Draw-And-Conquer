@@ -63,7 +63,6 @@ If the queue length is greater than n, queue server will start a game server, as
 // Server -> Client Game Start Notification
 {
     "command": "game_start",
-    "color": "red", // or "blue", "green", "orange"
     "game_session_uuid": "game-session-uuid",
 }
 ```
