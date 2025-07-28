@@ -102,6 +102,7 @@ The player will first request a colour for their pen.
 }
 // Server -> Client Pen Colour Response
 {
+    "command": "pen_colour_response",
     "status": "success",
     "colour": "red",
 }
