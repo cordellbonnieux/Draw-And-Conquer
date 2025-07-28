@@ -356,6 +356,7 @@ def game_server_request_handler(
         if command == "pen_colour_request":
             colour = session.assign_colour(player_id)
             reply = {
+                "command": "pen_colour_response",
                 "status": "success",
                 "colour": colour,
             }
