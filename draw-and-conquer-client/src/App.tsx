@@ -18,6 +18,7 @@ function App(): React.JSX.Element {
   const [uuid] = useState(() => uuidv4());
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [state, setState] = useState<State>(State.QUEUE)
+  const [color, setColor] = useState(["#FAB972", "#FFA500"]);
 
   const body: () => React.JSX.Element = () => {
     if (state == State.QUEUE)
@@ -28,7 +29,7 @@ function App(): React.JSX.Element {
 
     else if (state == State.GAME)
       return <div>TODO GAME
-        <DenyAndConquerGame  uuid={uuid}/>
+        <DenyAndConquerGame  uuid={uuid} color={color}/>
       </div>
 
     else if (state == State.SCOREBOARD)
@@ -58,8 +59,17 @@ function App(): React.JSX.Element {
         console.log('server says: ', data)
         if (data.state == 'QUEUE')
           setState(State.QUEUE)
-        else if (data.state == 'GAME')
+        else if (data.command == 'game_start'){ 
           setState(State.GAME)
+          if (data.color == 'blue')
+            setColor(["#00FFFF", "#0000FF"]);
+          else if (data.color == 'green')
+            setColor(["#CCFFCC", "#008000"]);
+          else if (data.color == 'red')
+            setColor(["#F88379", "#EE4B2B"]);
+          else if (data.color == 'orange')
+            setColor(["#FAB972", "#FFA500"]);
+        }
         else if (data.state == 'SCOREBOARD')
           setState(State.SCOREBOARD)
         else if (data.state == 'WAIT')
