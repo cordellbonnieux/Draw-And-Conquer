@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { sendCommand } from '../wsClient';
 
 enum SquareState { 
   WHITE,              
@@ -11,14 +10,16 @@ enum SquareState {
 
 type GameProps = {
   uuid: string;
-  color: string[];
+  game_session_uuid: string;
 };
 
-const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, color }) => {
+const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, game_session_uuid }) => {
   const GRID_SIZE = 8;
   const TOTAL_SQUARES = GRID_SIZE * GRID_SIZE;
+  const [color, setColor] = useState(["#FAB972", "#FFA500"]);
   const [opponentColor, setOpponentColor] = useState(["#FFA500", "#FAB972"]);
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null);
+  const [gameSocket, setGameSocket] = useState<WebSocket | null>(null);
 
   // Intialize the state of each square on the board
   const [squareStates, setSquareStates] = useState<SquareState[]>(
@@ -35,7 +36,16 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, color }) => {
     //Update Board
     setSquareStates(newStates);
 
-    sendCommand(uuid, "PENDOWN", { index, status: "in-progress" });
+    if (gameSocket?.readyState === WebSocket.OPEN) {
+      gameSocket.send(JSON.stringify({
+        uuid,
+        command: "pen_down",
+        index,
+        game_session_uuid,
+      }));
+    } else {
+      console.warn("Socket not ready. Current state:", gameSocket?.readyState);
+    }    
   };
 
   const handleMouseUp = (index: number) => {
@@ -46,16 +56,32 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, color }) => {
     const newStates = [...squareStates];
     // If held down more than 1 second, mark as complete, else fail
     if (duration > 1000){
-      newStatus = "complete";
       newStates[index] = SquareState.COMPLETE;
+      if (gameSocket?.readyState === WebSocket.OPEN) {
+        gameSocket.send(JSON.stringify({
+          uuid,
+          command: "pen_up_tile_claimed",
+          index,
+          game_session_uuid,
+        }));
+      } else {
+        console.warn("Socket not ready. Current state:", gameSocket?.readyState);
+      } 
     } else {
-      newStatus = "failed";
       newStates[index] = SquareState.WHITE;
+      if (gameSocket?.readyState === WebSocket.OPEN) {
+        gameSocket.send(JSON.stringify({
+          uuid,
+          command: "pen_up_tile_not_claimed",
+          index,
+          game_session_uuid,
+        }));
+      } else {
+        console.warn("Socket not ready. Current state:", gameSocket?.readyState);
+      } 
     }
     //Update Board
     setSquareStates(newStates);
-
-    sendCommand(uuid, "PENUP", {index, status: newStatus});
   };
 
   // Get the background color of a square 
@@ -74,28 +100,35 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, color }) => {
     }
   };
 
-  // Listen for other opponents activities and board updates
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:9438');
-    sendCommand("UPDATE_BOARD", "");
+    const socket = new WebSocket("ws://localhost:9438");
+    setGameSocket(socket);
 
+    // Assign color for the current player
+    socket.onopen = () => {
+      socket.send(JSON.stringify({
+        uuid: uuid,
+        command: "pen_colour_request",
+        game_session_uuid,
+      }));
+    };
+  
     socket.onmessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('server says: ', data.color, data.index);
-        if (data.color == 'blue')
-          setOpponentColor(["#0000FF", "#00FFFF"]);
-        else if (data.color == 'green')
-          setOpponentColor(["#008000", "#CCFFCC"]);
-        else if (data.color == 'red')
-          setOpponentColor(["#EE4B2B", "#F88379"]);
-        else if (data.color == 'orange')
-          setOpponentColor(["#FFA500", "#FAB972"]);
+        console.log('server says: ', data);
+
+        if (data.command == "pen_colour_response"){
+          if (data.colour == 'blue') setColor(["#00FFFF", "#0000FF"]);
+          else if (data.colour == 'green') setColor(["#CCFFCC", "#008000"]);
+          else if (data.colour == 'red') setColor(["#F88379", "#EE4B2B"]);
+          else if (data.colour == 'orange') setColor(["#FAB972", "#FFA500"]);
+        }
       } catch {
-        console.log('Received non-JSON message:', event.data);
+        console.log('Non-JSON message:', event.data);
       }
-    }
-  }, []);
+    };
+  }, []);  
 
   return (
     <div>
