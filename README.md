@@ -57,7 +57,7 @@ On player enqueue, matchmaking server enqueue the UUID and client starts heartbe
 }
 ```
 
-If the queue length is greater than n, queue server will start a game server and notify the players in the queue with a game session UUID. heartbeat will stop.
+If the queue length is greater than n, queue server will start a game server, assign different colors for players and notify the players in the queue with a game session UUID. heartbeat will stop.
 
 ```json
 // Server -> Client Game Start Notification
