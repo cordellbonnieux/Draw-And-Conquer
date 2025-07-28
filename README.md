@@ -63,7 +63,7 @@ If the queue length is greater than n, queue server will start a game server and
 // Server -> Client Game Start Notification
 {
     "command": "game_start",
-    "status": "success",
+    "color": "red", // or "blue", "green", "orange"
     "game_session_uuid": "game-session-uuid",
 }
 ```
@@ -121,13 +121,6 @@ Player can leave the queue before the game starts, which will remove the player 
   - `owner`: Player UUID (if USED or CLOSED)
 
 #### Client/Server Commands
-
-- **ASSIGN_COLOR**
-  - Request a unique color assignment for this player.
-  - **Server Response Example:**
-    ```json
-    { "color": "red" }
-    ```
 
 - **UPDATE_BOARD**
   - Request the current game board state and any updates from other players.
