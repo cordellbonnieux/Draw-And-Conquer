@@ -11,11 +11,30 @@
 
 Matchmaking server is always standby on port 9437 for players to enqueue.
 
+#### Name Input Flow
+
+Before joining the queue, players are prompted to enter their name. The client displays a name input form that:
+
+- Requires a non-empty name before allowing submission
+- Provides a clean, modern interface with validation
+- Auto-focuses on the input field for better UX
+- Shows a "Continue" button that's disabled until a valid name is entered
+
+After entering their name, players see the queue interface with a personalized welcome message.
+
+#### Queue Interface
+
+The queue interface displays:
+- A welcome message with the player's name: "Welcome, [PlayerName]!"
+- Current queue status: "[X] of [Y] players are ready"
+- A ready/not ready toggle button
+
 ```json
 // Client -> Server Enqueue Request
 {
     "uuid": "player-uuid",
     "command": "enqueue",
+    "playerName": "PlayerName"
 }
 // Server -> Client Enqueue Response
 {
