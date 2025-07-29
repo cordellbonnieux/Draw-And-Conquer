@@ -14,6 +14,11 @@ enum State {
   WAIT
 }
 
+const HOST: String = process.env.REACT_APP_HOST ? process.env.REACT_APP_HOST : "localhost"
+const PORT: String = process.env.REACT_APP_PORT ? process.env.REACT_APP_PORT : "9437"
+console.log("host: " + HOST, "\nport: " + PORT)
+
+
 function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
   const [uuid] = useState(() => uuidv4());
@@ -59,7 +64,7 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     if (!socket) {
-      const ws = new WebSocket('ws://localhost:9437');
+      const ws = new WebSocket('ws://' + HOST + ':' + PORT);
 
       ws.onopen = () => {
         ws.send(JSON.stringify({"message": "hello server"}))
