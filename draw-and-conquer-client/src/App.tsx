@@ -10,13 +10,15 @@ enum State {
   SCOREBOARD,
   WAIT
 }
-const HOST: String = process.env.REACT_APP_HOST ? process.env.REACT_APP_HOST : 'localhost'
-const PORT: String = process.env.REACT_APP_PORT ? process.env.REACT_APP_PORT : '9437'
+const MATCH_MAKING_HOST: String = process.env.REACT_APP_MATCH_MAKING_HOST ? process.env.REACT_APP_MATCH_MAKING_HOST : 'localhost'
+const MATCH_MAKING_PORT: String = process.env.REACT_APP_MATCH_MAKING_PORT ? process.env.REACT_APP_MATCH_MAKING_PORT : '9437'
+const GAME_HOST: String = process.env.REACT_APP_GAME_HOST ? process.env.REACT_APP_GAME_HOST : 'localhost'
+const GAME_PORT: String = process.env.REACT_APP_GAME_PORT ? process.env.REACT_APP_GAME_PORT : '9437'
 
 function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
   const [uuid] = useState(() => uuidv4());
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [matchMakingSocket, setMatchMakingSocket] = useState<WebSocket | null>(null);
   const [state, setState] = useState<State>(State.QUEUE)
   const [game_session_uuid, setGame_session_uuid] = useState('')
   const [game, setGame] = useState({
@@ -25,51 +27,64 @@ function App(): React.JSX.Element {
   })
 
   const body: () => React.JSX.Element = () => {
-    if (state === State.QUEUE) return <Queue uuid={uuid} socket={socket} queueLength={game['numberOfPlayers']} />
+    if (state === State.QUEUE) return <Queue uuid={uuid} socket={matchMakingSocket} queueLength={game['numberOfPlayers']} />
 
-    if (state === State.GAME) return <DenyAndConquerGame  uuid={uuid} game_session_uuid={game_session_uuid}/>
+    if (state === State.GAME) return <DenyAndConquerGame  uuid={uuid} game_session_uuid={game_session_uuid} />
 
-    if (state === State.SCOREBOARD) return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId}/>
+    if (state === State.SCOREBOARD) return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} />
 
     if (state === State.WAIT) return <div>TODO WAIT</div>
     
     else return <div>Something went wrong!</div>
   }
 
-  useEffect(() => {
-    if (!socket) {
-      const ws = new WebSocket('ws://' + HOST + ':' + PORT);
+  function matchMakingSocketConnection() {
+    const ws = new WebSocket('ws://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT);
+    ws.onmessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data)
 
-      ws.onmessage = (event: MessageEvent) => {
-        const data = JSON.parse(event.data)
-
-        switch (data.command) {
-          case 'game_start':
-            setState(State.GAME)
-            setGame_session_uuid(data.game_session_uuid)
-            break
-          case 'enqueue':
-          default:
-        }
-
-        switch (data.status) {
-          case 'success':
-            setGame({...game, "numberOfPlayers": data.queue_length})
-            break
-          case 'error':
-            console.error("Server Error Message: ", data.error)
-            break
-        }
+      switch (data.command) {
+        case 'game_start':
+          setState(State.GAME)
+          setGame_session_uuid(data.game_session_uuid)
+          break
+        case 'enqueue':
+        default:
       }
 
-
-      ws.onerror = (error: Event) => {
-        console.error('Websocket Error: ', error)
+      switch (data.status) {
+        case 'success':
+          setGame({...game, "numberOfPlayers": data.queue_length})
+          break
+        case 'error':
+          console.error("Server Error Message: ", data.error)
+          break
       }
-
-      setSocket(ws);
     }
-  }, [socket])
+
+    ws.onerror = (error: Event) => {
+      console.error('Websocket Error: ', error)
+    }
+
+    setMatchMakingSocket(ws); 
+  }
+
+  function gameSocketConnection() {
+    const ws = new WebSocket('ws://' + GAME_HOST + ':' + GAME_PORT);
+    ws.onmessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data)
+
+      // TODO Do some game stuff
+    }
+
+    ws.onerror = (error: Event) => {
+      console.error('Websocket Error: ', error)
+    }
+  }
+
+  useEffect(() => {
+    if (!matchMakingSocket) matchMakingSocketConnection()
+  }, [matchMakingSocket])
 
   const players = [
     { id: '1', name: 'Alice', score: 12 },
