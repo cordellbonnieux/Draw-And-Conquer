@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from "react"
 
 type PlayerQueueDisplayProps = {
-    playerName: string;
-};
+    playerName: string
+}
 
 export default function PlayerQueueDisplay({ playerName }: PlayerQueueDisplayProps): React.JSX.Element {
     // TODO ask server for info

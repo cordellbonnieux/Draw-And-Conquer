@@ -1,23 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import logo from './logo.svg';
-import './App.css';
-import TitleBar from './components/TitleBar';
-import PlayerQueueDisplay from './components/PlayerQueueDisplay';
-import ReadyButton from './components/ReadyButton';
-import NameInput from './components/NameInput';
-import DenyAndConquerGame from './components/Game';
-import ScoreBoard from './components/ScoreBoard';
+import React, { useEffect, useState } from 'react'
+import './App.css'
+import TitleBar from './components/TitleBar'
+import DenyAndConquerGame from './components/Game'
+import ScoreBoard from './components/ScoreBoard'
+import Queue from './components/Queue'
 enum State {
   QUEUE,
   GAME,
   SCOREBOARD,
   WAIT
 }
-
 const HOST: String = process.env.REACT_APP_HOST ? process.env.REACT_APP_HOST : "localhost"
 const PORT: String = process.env.REACT_APP_PORT ? process.env.REACT_APP_PORT : "9437"
-console.log("host: " + HOST, "\nport: " + PORT)
-
 
 function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
@@ -25,66 +19,49 @@ function App(): React.JSX.Element {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [state, setState] = useState<State>(State.QUEUE)
   const [game_session_uuid, setGame_session_uuid] = useState("")
-  const [playerName, setPlayerName] = useState<string>("")
-  const [hasEnteredName, setHasEnteredName] = useState<boolean>(false)
-
-  const handleNameSubmit = (name: string) => {
-    setPlayerName(name);
-    setHasEnteredName(true);
-  };
 
   const body: () => React.JSX.Element = () => {
-    if (state == State.QUEUE) {
-      if (!hasEnteredName) {
-        return <NameInput onNameSubmit={handleNameSubmit} isVisible={true} />
-      }
-      return <div>
-        <PlayerQueueDisplay playerName={playerName}></PlayerQueueDisplay>
-        <ReadyButton uuid={uuid} socket={socket} playerName={playerName}></ReadyButton>
-      </div>
-    }
+    if (state === State.QUEUE) return <Queue uuid={uuid} socket={socket} />
 
-    else if (state == State.GAME)
-      return <div>TODO GAME
-        <DenyAndConquerGame  uuid={uuid} game_session_uuid={game_session_uuid}/>
-      </div>
+    if (state === State.GAME) return <DenyAndConquerGame  uuid={uuid} game_session_uuid={game_session_uuid}/>
 
-    else if (state == State.SCOREBOARD)
-      return (<div> 
-        <h2>Scoreboard</h2>
-        <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId}/>
-      </div>) 
+    if (state === State.SCOREBOARD) return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId}/>
 
-    else if (state == State.WAIT)
-      return <div>TODO WAIT</div>
+    if (state === State.WAIT) return <div>TODO WAIT</div>
     
-    else
-      return <div>Something went wrong!</div>
+    else return <div>Something went wrong!</div>
+  }
+
+  function setAppState(state: String): void {
+    if (state === 'QUEUE')
+      setState(State.QUEUE)
+    else if (state === 'SCOREBOARD')
+      setState(State.SCOREBOARD)
+    else if (state === 'WAIT')
+      setState(State.WAIT)
+  }
+
+  function parseServerCommands(cmd: String): void {
   }
 
   useEffect(() => {
     if (!socket) {
       const ws = new WebSocket('ws://' + HOST + ':' + PORT);
 
-      ws.onopen = () => {
-        ws.send(JSON.stringify({"message": "hello server"}))
-        console.log('sent the server a message')
-      }
-
       ws.onmessage = (event: MessageEvent) => {
+
         const data = JSON.parse(event.data)
+
         console.log('server says: ', data)
-        if (data.state == 'QUEUE')
-          setState(State.QUEUE)
-        else if (data.command == 'game_start'){ 
+
+        if (data.state) setAppState(data.state)
+
+        if (data.command == 'game_start'){ 
           setState(State.GAME)
           setGame_session_uuid(data.game_session_uuid)
         }
-        else if (data.state == 'SCOREBOARD')
-          setState(State.SCOREBOARD)
-        else if (data.state == 'WAIT')
-          setState(State.WAIT)
       }
+
 
       ws.onerror = (error: Event) => {
         console.error('Websocket Error: ', error)
