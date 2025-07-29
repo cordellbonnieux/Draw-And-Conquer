@@ -5,14 +5,15 @@ import ReadyButton from './ReadyButton'
 
 type QueueProps = {
     uuid: string,
-    socket: WebSocket | null
+    socket: WebSocket | null,
+    queueLength: Number
 }
 
 export default function Queue(props: QueueProps): React.JSX.Element {
     const [ready, setReady] = useState<boolean>(false)
     const [playerName, setPlayerName] = useState<string>("")
     const [hasEnteredName, setHasEnteredName] = useState<boolean>(false)
-    const {uuid, socket} = props
+    const {uuid, socket, queueLength} = props
 
     const handleNameSubmit = (name: string) => {
         setPlayerName(name);
@@ -21,23 +22,24 @@ export default function Queue(props: QueueProps): React.JSX.Element {
 
     function toggleReady() {
         if (!socket || socket.readyState !== WebSocket.OPEN) {
-            console.warn("WebSocket not ready");
-            return;
+            console.warn('WebSocket not ready')
+            return
         }
 
         if (!ready) {
             socket.send(JSON.stringify({
                 uuid: uuid,
-                command: "enqueue",
+                command: 'enqueue',
                 name: playerName
-            }));
-            setReady(true);
+            }))
+            setReady(true)
+            
         } else {
             socket.send(JSON.stringify({
                 uuid: uuid,
-                command: "remove_from_queue"
-            }));
-            setReady(false);
+                command: 'remove_from_queue'
+            }))
+            setReady(false)
         }
     }
 
@@ -45,7 +47,7 @@ export default function Queue(props: QueueProps): React.JSX.Element {
         return <NameInput onNameSubmit={handleNameSubmit} isVisible={true} />
     else
         return (<div>
-            <PlayerQueueDisplay playerName={playerName} />
+            <PlayerQueueDisplay playerName={playerName} queueLength={queueLength} />
             <ReadyButton ready={ready} toggleReady={toggleReady} />
         </div>)
 }

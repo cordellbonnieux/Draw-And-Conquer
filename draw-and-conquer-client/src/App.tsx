@@ -10,18 +10,22 @@ enum State {
   SCOREBOARD,
   WAIT
 }
-const HOST: String = process.env.REACT_APP_HOST ? process.env.REACT_APP_HOST : "localhost"
-const PORT: String = process.env.REACT_APP_PORT ? process.env.REACT_APP_PORT : "9437"
+const HOST: String = process.env.REACT_APP_HOST ? process.env.REACT_APP_HOST : 'localhost'
+const PORT: String = process.env.REACT_APP_PORT ? process.env.REACT_APP_PORT : '9437'
 
 function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
   const [uuid] = useState(() => uuidv4());
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [state, setState] = useState<State>(State.QUEUE)
-  const [game_session_uuid, setGame_session_uuid] = useState("")
+  const [game_session_uuid, setGame_session_uuid] = useState('')
+  const [game, setGame] = useState({
+    'numberOfPlayers': 0,
+    // TODO Create a data structure to house game data
+  })
 
   const body: () => React.JSX.Element = () => {
-    if (state === State.QUEUE) return <Queue uuid={uuid} socket={socket} />
+    if (state === State.QUEUE) return <Queue uuid={uuid} socket={socket} queueLength={game['numberOfPlayers']} />
 
     if (state === State.GAME) return <DenyAndConquerGame  uuid={uuid} game_session_uuid={game_session_uuid}/>
 
@@ -32,33 +36,29 @@ function App(): React.JSX.Element {
     else return <div>Something went wrong!</div>
   }
 
-  function setAppState(state: String): void {
-    if (state === 'QUEUE')
-      setState(State.QUEUE)
-    else if (state === 'SCOREBOARD')
-      setState(State.SCOREBOARD)
-    else if (state === 'WAIT')
-      setState(State.WAIT)
-  }
-
-  function parseServerCommands(cmd: String): void {
-  }
-
   useEffect(() => {
     if (!socket) {
       const ws = new WebSocket('ws://' + HOST + ':' + PORT);
 
       ws.onmessage = (event: MessageEvent) => {
-
         const data = JSON.parse(event.data)
 
-        console.log('server says: ', data)
+        switch (data.command) {
+          case 'game_start':
+            setState(State.GAME)
+            setGame_session_uuid(data.game_session_uuid)
+            break
+          case 'enqueue':
+          default:
+        }
 
-        if (data.state) setAppState(data.state)
-
-        if (data.command == 'game_start'){ 
-          setState(State.GAME)
-          setGame_session_uuid(data.game_session_uuid)
+        switch (data.status) {
+          case 'success':
+            setGame({...game, "numberOfPlayers": data.queue_length})
+            break
+          case 'error':
+            console.error("Server Error Message: ", data.error)
+            break
         }
       }
 
