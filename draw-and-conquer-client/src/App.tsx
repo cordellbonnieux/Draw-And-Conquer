@@ -13,40 +13,44 @@ enum State {
 const MATCH_MAKING_HOST: String = process.env.REACT_APP_MATCH_MAKING_HOST ? process.env.REACT_APP_MATCH_MAKING_HOST : 'localhost'
 const MATCH_MAKING_PORT: String = process.env.REACT_APP_MATCH_MAKING_PORT ? process.env.REACT_APP_MATCH_MAKING_PORT : '9437'
 const GAME_HOST: String = process.env.REACT_APP_GAME_HOST ? process.env.REACT_APP_GAME_HOST : 'localhost'
-const GAME_PORT: String = process.env.REACT_APP_GAME_PORT ? process.env.REACT_APP_GAME_PORT : '9437'
+const GAME_PORT: String = process.env.REACT_APP_GAME_PORT ? process.env.REACT_APP_GAME_PORT : '9438'
 
 function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
   const [uuid] = useState(() => uuidv4());
-  const [matchMakingSocket, setMatchMakingSocket] = useState<WebSocket | null>(null);
+  const [matchMakingSocket, setMatchMakingSocket] = useState<WebSocket | null>(null)
+  const [gameSocket, setGameSocket] = useState<WebSocket | null>(null)
   const [state, setState] = useState<State>(State.QUEUE)
   const [game_session_uuid, setGame_session_uuid] = useState('')
   const [game, setGame] = useState({
+    // This whole object could be refactored into a new class / data structure
     'numberOfPlayers': 0,
-    // TODO Create a data structure to house game data
+    'colour': '',
+    'players': [] // player data structure would be nice to have too
   })
 
   const body: () => React.JSX.Element = () => {
     if (state === State.QUEUE) return <Queue uuid={uuid} socket={matchMakingSocket} queueLength={game['numberOfPlayers']} />
 
-    if (state === State.GAME) return <DenyAndConquerGame  uuid={uuid} game_session_uuid={game_session_uuid} />
+    else if (state === State.GAME) return <DenyAndConquerGame uuid={uuid} game_session_uuid={game_session_uuid} />
 
-    if (state === State.SCOREBOARD) return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} />
+    else if (state === State.SCOREBOARD) return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} />
 
-    if (state === State.WAIT) return <div>TODO WAIT</div>
+    else if (state === State.WAIT) return <div>TODO WAIT</div>
     
     else return <div>Something went wrong!</div>
   }
 
   function matchMakingSocketConnection() {
-    const ws = new WebSocket('ws://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT);
+    const ws = new WebSocket('ws://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT)
+
     ws.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data)
-
       switch (data.command) {
         case 'game_start':
           setState(State.GAME)
           setGame_session_uuid(data.game_session_uuid)
+          ws.close()
           break
         case 'enqueue':
         default:
@@ -66,24 +70,53 @@ function App(): React.JSX.Element {
       console.error('Websocket Error: ', error)
     }
 
-    setMatchMakingSocket(ws); 
+    setMatchMakingSocket(ws);
   }
 
   function gameSocketConnection() {
-    const ws = new WebSocket('ws://' + GAME_HOST + ':' + GAME_PORT);
+    const ws = new WebSocket('ws://' + GAME_HOST + ':' + GAME_PORT)
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        'game_session_uuid': game_session_uuid,
+        'uuid': uuid,
+        'command': 'pen_colour_request'
+      }))
+    }
+
     ws.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data)
 
-      // TODO Do some game stuff
+      switch (data.command) {
+        case 'inactive_player':
+          setState(State.QUEUE)
+          ws.close()
+          break
+        case 'not_enough_players':
+          setState(State.QUEUE)
+          ws.close()
+          break
+        case 'pen_colour_response':
+          setGame({...game, 'colour': data.colour})
+          break
+        case 'current_players':
+          setGame({
+            ...game,
+            'players': [] // TODO here
+          })
+      }
     }
 
     ws.onerror = (error: Event) => {
       console.error('Websocket Error: ', error)
     }
+
+    setGameSocket(ws)
   }
 
   useEffect(() => {
-    if (!matchMakingSocket) matchMakingSocketConnection()
+    if (state === State.QUEUE && !matchMakingSocket) matchMakingSocketConnection()
+    if (state === State.GAME && !gameSocket) gameSocketConnection()
   }, [matchMakingSocket])
 
   const players = [
