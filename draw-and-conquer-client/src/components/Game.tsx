@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import ScoreBoard from './ScoreBoard'
 
 type GameProps = {
   uuid: String,
@@ -11,26 +10,10 @@ type GameProps = {
   squares: Array<string>
 }
 
-
-
-//////////////////////////// examples //////////////////////////////////////////
-const players = [
-  { id: '1', name: 'Alice', score: 12 },
-  { id: '2', name: 'Bob', score: 15 },
-  { id: '3', name: 'You', score: 10 },
-  { id: '4', name: 'Jane', score: 10 },
-  { id: '200', name: 'Jim', score: 8 },
-  { id: '5', name: 'Tim', score: 9 },
-];
-const currentPlayerId = '3';
-////////////////////////////////////////////////////////////////////////////////
-
 const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, player_dic, squares }) => {
-  const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null);
-  const [mouseDownTime, setMouseDownTime] = useState<number | null>(null);
-  const [gameEnd, setGameEnd] = useState(false);
+  const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null)
+  const [mouseDownTime, setMouseDownTime] = useState<number | null>(null)
 
-  // Intialize the state of each square on the board
   const [squareStates, setSquareStates] = useState<string[]>(squares)
 
   const handleMouseDown = (index: number): void => {
@@ -81,15 +64,13 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
       }))
     }
     //Update Board
-    setSquareStates(newStates);
+    setSquareStates(newStates)
   }
 
   return (
     <div>
       <h2>Deny and Conquer - Game Board</h2>
-
-      {!gameEnd &&
-      <div>
+      {<div>
         {/* Draw Game Board */}
         <div
           style={{
@@ -119,15 +100,8 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
           ))}
         </div>
       </div>}
-
-      {gameEnd &&
-      <div>
-      <h2>Scoreboard</h2>
-        <ScoreBoard uuid={uuid} players={player_dic} currentPlayerId={currentPlayerId}/>
-      </div>}
-
     </div>
-  );
-};
+  )
+}
 
-export default DenyAndConquerGame;
+export default DenyAndConquerGame
