@@ -19,7 +19,7 @@ const GAME_PORT: String = process.env.REACT_APP_GAME_PORT ? process.env.REACT_AP
  * Top level component, handles all server responses and cascades data down to children;
  * Application state is also controlled from here
  */
-function App(): React.JSX.Element {
+export default function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
   const [uuid] = useState(() => uuidv4());
   const [matchMakingSocket, setMatchMakingSocket] = useState<WebSocket | null>(null)
@@ -34,7 +34,7 @@ function App(): React.JSX.Element {
     'uuid': '',
     'numberOfPlayers': 0,
     'colour': '',
-    'players': {}, // player data structure would be nice to have too
+    'players': {}, // player data structure would be nice to have too, right now it stores exactly as it comes in from the server
     'squares': new Array<string>()
   })
 
@@ -55,7 +55,7 @@ function App(): React.JSX.Element {
       return <Queue uuid={uuid} socket={matchMakingSocket} queueLength={game['numberOfPlayers']} />
 
     else if (state === State.GAME) 
-       return <DenyAndConquerGame uuid={uuid} ws={gameSocket} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} player_colour={getColour(game.colour)} player_dic={game.players} squares={game.squares} />
+       return <DenyAndConquerGame uuid={uuid} ws={gameSocket} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} player_colour={getColour(game.colour)} squares={game.squares} />
 
     else if (state === State.SCOREBOARD) 
       return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} />
@@ -208,5 +208,3 @@ const getColour = (colour: String) => {
   else if (colour == 'cyan') return ["#E0FFFF", "#00CED1"]
   return ["#ffffff", "#cccccc"]
 }
-
-export default App;

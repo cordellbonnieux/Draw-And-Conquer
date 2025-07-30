@@ -6,11 +6,10 @@ type GameProps = {
   game_session_uuid: String,
   number_of_players: Number,
   player_colour: Array<string>,
-  player_dic: Object,
   squares: Array<string>
 }
 
-const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, player_dic, squares }) => {
+const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squares }) => {
   const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null)
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null)
 
