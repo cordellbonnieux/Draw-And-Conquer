@@ -6,13 +6,13 @@ type GameProps = {
   game_session_uuid: String,
   number_of_players: Number,
   player_colour: Array<string>,
-  squares: Array<string>
+  squareStates: Array<string>,
+  updateSquares: (squares: Array<string>) => void
 }
 
-const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squares }) => {
+const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squareStates, updateSquares }) => {
   const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null)
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null)
-  const [squareStates, setSquareStates] = useState<string[]>(squares)
 
   const handleMouseDown = (index: number): void => {
     if (squareStates[index] !== '#ffffff') return
@@ -24,7 +24,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
     newStates[index] = player_colour[0]
 
     //Update Board
-    setSquareStates(newStates);
+    updateSquares(newStates);
 
     ws?.send(JSON.stringify({
       uuid,
@@ -63,7 +63,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
     }
 
     //Update Board
-    setSquareStates(newStates)
+    updateSquares(newStates)
   }
 
   return (

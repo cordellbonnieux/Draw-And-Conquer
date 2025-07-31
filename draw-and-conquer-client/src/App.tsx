@@ -56,7 +56,9 @@ export default function App(): React.JSX.Element {
       return <Queue uuid={uuid} socket={matchMakingSocket} queueLength={game['numberOfPlayers']} />
 
     else if (state === State.GAME) 
-       return <DenyAndConquerGame uuid={uuid} ws={gameSocket} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} player_colour={getColour(game.colour)} squares={game.squares} />
+       return <DenyAndConquerGame uuid={uuid} ws={gameSocket} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} 
+       player_colour={getColour(game.colour)} squareStates={game.squares} 
+       updateSquares={(newSquares) => setGame(prev => ({ ...prev, squares: newSquares }))}/>
 
     else if (state === State.SCOREBOARD) 
       return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} /> // winner var goes in here
@@ -135,23 +137,24 @@ export default function App(): React.JSX.Element {
           ws.close()
           break
         case 'pen_colour_response':
-          setGame({...game, 'colour': data.colour})
+          setGame(prev => ({ ...prev, colour: data.colour }))
           break
         case 'current_players':
-          setGame({...game, 'players': data.players})
+          setGame(prev => ({ ...prev, players: data.players, numberOfPlayers: Object.keys(data.players).length }))
           break
         case 'pen_up_broadcast':
-          let a_squares: string[] = game.squares
-          if (!data.status)
-            a_squares[data.index] = '#ffffff'
-          else
-            a_squares[data.index] = getColour(data.colour)[1]
-          setGame({...game, squares: a_squares})
+          setGame(prev => {
+            const squares = [...prev.squares];
+            squares[data.index] = data.status ? getColour(data.colour)[1] : '#ffffff';
+            return { ...prev, squares };
+          });
           break
         case 'pen_down_broadcast':
-          let b_squares: string[] = game.squares
-          b_squares[data.index] = getColour(data.colour)[0]
-          setGame({...game, squares: b_squares})
+          setGame(prev => {
+            const squares = [...prev.squares];
+            squares[data.index] = getColour(data.colour)[0];
+            return { ...prev, squares };
+          });
           break
         case 'game_win':
           setWinner({
@@ -171,6 +174,12 @@ export default function App(): React.JSX.Element {
 
     setGameSocket(ws)
   }
+  // update number of squares when numberOfPlayers change
+  useEffect(() => {
+    setGame(prev => ({ ...prev,
+      squares:  Array(Math.pow(prev.numberOfPlayers.valueOf(), 2)).fill('#ffffff')
+    }));
+  }, [game.numberOfPlayers])
 
   function matchMakerHeartBeat(): void {
     if (state === State.QUEUE) {
@@ -187,7 +196,7 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     if (state === State.QUEUE && !matchMakingSocket) matchMakingSocketConnection()
     if (state === State.GAME && !gameSocket) gameSocketConnection()
-  }, [matchMakingSocket])
+  }, [state, matchMakingSocket])
 
   const players = [
     { id: '1', name: 'Alice', score: 12 },
