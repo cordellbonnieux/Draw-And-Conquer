@@ -40,6 +40,7 @@ export default function App(): React.JSX.Element {
 
   /**
    * Populated when a player wins a game, scoreboard is updated with this var
+   * TODO pop this prop in SscoreBoard component
    */
   const [winner, setWinner] = useState({
     'uuid': '',
@@ -58,7 +59,7 @@ export default function App(): React.JSX.Element {
        return <DenyAndConquerGame uuid={uuid} ws={gameSocket} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} player_colour={getColour(game.colour)} squares={game.squares} />
 
     else if (state === State.SCOREBOARD) 
-      return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} />
+      return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} /> // winner var goes in here
 
     else if (state === State.WAIT) 
       return <div>TODO WAIT</div>
@@ -83,11 +84,16 @@ export default function App(): React.JSX.Element {
           setState(State.GAME) 
           ws.close()
           break
+        case 'heartbeat_timeout':
+          console.log('heartbeat timed out!')
+          break
       }
 
       switch (data.status) {
         case 'success':
+          console.log('heartbeat received')
           setGame({...game, "numberOfPlayers": data.queue_length})
+          matchMakerHeartBeat()
           break
         case 'error':
           console.error("Server Error Message: ", data.error)
@@ -164,6 +170,18 @@ export default function App(): React.JSX.Element {
     }
 
     setGameSocket(ws)
+  }
+
+  function matchMakerHeartBeat(): void {
+    if (state === State.QUEUE) {
+      setTimeout(() => {
+        console.log('heartbeat sent')
+        matchMakingSocket?.send(JSON.stringify({
+          uuid,
+          'command': 'queue_heartbeat'
+        }))
+      }, 10000)
+    }
   }
 
   useEffect(() => {

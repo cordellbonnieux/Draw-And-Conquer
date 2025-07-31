@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 type GameProps = {
   uuid: String,
@@ -12,7 +12,6 @@ type GameProps = {
 const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squares }) => {
   const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null)
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null)
-
   const [squareStates, setSquareStates] = useState<string[]>(squares)
 
   const handleMouseDown = (index: number): void => {
@@ -29,7 +28,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
 
     ws?.send(JSON.stringify({
       uuid,
-      command: 'pend_down',
+      command: 'pen_down',
       index,
       game_session_uuid
     }))
@@ -62,6 +61,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
         game_session_uuid,
       }))
     }
+
     //Update Board
     setSquareStates(newStates)
   }
@@ -94,8 +94,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
               }}
               onMouseDown={() => handleMouseDown(index)}
               onMouseUp={() => handleMouseUp()}
-            >
-            </div>
+            />
           ))}
         </div>
       </div>}
