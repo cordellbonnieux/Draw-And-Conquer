@@ -100,7 +100,7 @@ class MatchmakerState(ServerState):
             was_in_queue = player_id in self.matchmaking_queue
             self.matchmaking_queue.pop(player_id, None)
             self.player_last_heartbeat.pop(player_id, None)
-            player_name = self.player_names.pop(player_id, None)
+            self.player_names.pop(player_id, None)
             self.player_websockets.pop(player_id, None)
 
             if was_in_queue:
