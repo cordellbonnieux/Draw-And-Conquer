@@ -207,7 +207,7 @@ The server will then notify all other players in the game session of the pen up 
     "command": "pen_up_broadcast",
     "index": 0,
     "colour": "red",
-    "status": true, // or false
+    "status": "pen_up_tile_claimed", // or "pen_up_tile_not_claimed"
 }
 ```
 
