@@ -145,7 +145,7 @@ export default function App(): React.JSX.Element {
         case 'pen_up_broadcast':
           setGame(prev => {
             const squares = [...prev.squares];
-            squares[data.index] = data.status ? getColour(data.colour)[1] : '#ffffff';
+            squares[data.index] = data.status == "pen_up_tile_claimed" ? getColour(data.colour)[1] : '#ffffff';
             return { ...prev, squares };
           });
           break
