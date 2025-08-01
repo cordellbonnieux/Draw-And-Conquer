@@ -54,7 +54,7 @@ class QueueWatchdog:
         with self.matchmaker_state.lock:
             for player_id in list(self.matchmaker_state.matchmaking_queue.keys()):
                 last_heartbeat = self.matchmaker_state.player_last_heartbeat.get(
-                    player_id, 0
+                    player_id
                 )
                 time_since_heartbeat = current_time - last_heartbeat
 
@@ -66,8 +66,7 @@ class QueueWatchdog:
         for player_id, player_ws in timed_out_players:
             try:
                 timeout_reply = {
-                    "status": "error",
-                    "error": "Heartbeat timeout",
+                    "command": "heartbeat_timeout",
                 }
                 player_ws.send(json.dumps(timeout_reply))
                 player_ws.close()
