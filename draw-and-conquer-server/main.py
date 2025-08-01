@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import threading
 import time
 from typing import Tuple
@@ -62,7 +63,45 @@ def parse_args():
         default=None,
         help="Port number for echo server (testing only)",
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        help="Set the logging level",
+    )
     return parser.parse_args()
+
+
+def configure_logging(log_level: str = "INFO") -> None:
+    """
+    Configure logging for the application.
+
+    Args:
+        log_level (str): The logging level to use (DEBUG, INFO, WARNING, ERROR)
+    """
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Configure root logger
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Create console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    # Add handler to root logger
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        root_logger.addHandler(console_handler)
+
+    logging.info("Logging level: %s", log_level)
 
 
 def echo_back(
@@ -83,16 +122,28 @@ def start_echo_server(args) -> None:
     """
     Start a simple echo server for testing.
     """
-    echo_server = TCPServer(args.host, args.echo_port, echo_back, ServerState())
+    logging.info("Starting echo server [%s:%d]", args.host, args.echo_port)
+
+    server_state = ServerState()
+    echo_server = TCPServer(
+        host=args.host,
+        port=args.echo_port,
+        request_handler=echo_back,
+        server_state=server_state,
+    )
+
     echo_thread = threading.Thread(target=echo_server.start, daemon=True)
     echo_thread.start()
-    print(f"Echo server started on {args.host}:{args.echo_port}")
+
+    logging.info("Echo server started")
 
 
 def start_servers(args) -> None:
     """
     Start the matchmaker and game servers with watchdogs.
     """
+    logging.info("Initializing components")
+
     # Create server states
     matchmaker_state = MatchmakerState(
         lobby_size=args.lobby_size, heartbeat_timeout=args.heartbeat_timeout
@@ -114,6 +165,7 @@ def start_servers(args) -> None:
         server_state=game_state,
     )
 
+    logging.info("Starting servers")
     # Start servers in separate threads
     matchmaker_thread = threading.Thread(target=matchmaker_server.start, daemon=True)
     game_thread = threading.Thread(target=game_server.start, daemon=True)
@@ -121,6 +173,7 @@ def start_servers(args) -> None:
     matchmaker_thread.start()
     game_thread.start()
 
+    logging.info("Starting watchdogs")
     # Start watchdog processes
     queue_watchdog_instance = QueueWatchdog(
         matchmaker_state, game_state, args.num_tiles, args.colour_selection_timeout
@@ -137,13 +190,13 @@ def start_servers(args) -> None:
     queue_watchdog_thread.start()
     game_watchdog_thread.start()
 
-    print(f"Matchmaker server started on {args.host}:{args.matchmaker_port}")
-    print(f"Game server started on {args.host}:{args.games_server_port}")
-
 
 def main():
     args = parse_args()
 
+    configure_logging(args.log_level)
+
+    logging.info("Server starting")
     if args.echo_port:
         if (
             args.echo_port == args.matchmaker_port
@@ -157,10 +210,11 @@ def main():
         start_servers(args)
 
     try:
+        logging.info("Server ready")
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nShutting down servers...")
+        logging.info("Shutting down")
 
 
 if __name__ == "__main__":

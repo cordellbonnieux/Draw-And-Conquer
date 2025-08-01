@@ -1,10 +1,13 @@
 import json
+import logging
 import time
 import uuid
 from typing import List
 
 from game_server import GameServerState, GameSession
 from matchmaker import MatchmakerState
+
+logger = logging.getLogger(__name__)
 
 
 class QueueWatchdog:
@@ -61,6 +64,11 @@ class QueueWatchdog:
                 if time_since_heartbeat > self.matchmaker_state.heartbeat_timeout:
                     player_ws = self.matchmaker_state.player_websockets.get(player_id)
                     timed_out_players.append((player_id, player_ws))
+                    logger.warning(
+                        "Player %s timed out for %ds",
+                        player_id,
+                        time_since_heartbeat,
+                    )
 
         # Notify and remove timed out players
         for player_id, player_ws in timed_out_players:
@@ -70,8 +78,9 @@ class QueueWatchdog:
                 }
                 player_ws.send(json.dumps(timeout_reply))
                 player_ws.close()
+                logger.debug("Timeout notice sent to player %s", player_id)
             except (ConnectionError, OSError, BrokenPipeError):
-                pass
+                logger.debug("Timeout notice failed: player %s", player_id)
 
             self.matchmaker_state.remove_player(player_id)
 
@@ -104,6 +113,12 @@ class QueueWatchdog:
 
             # Verify we have the correct number of players
             if len(player_ids) == self.matchmaker_state.lobby_size:
+                logger.info(
+                    "Session %s: Game created with players %s",
+                    game_session_uuid,
+                    player_ids,
+                )
+
                 player_names = {
                     player_id: player_name
                     for player_id, player_name in zip(player_ids, player_names)
@@ -119,15 +134,20 @@ class QueueWatchdog:
                 )
 
                 # Notify players that the game has started
-                for player_ws in player_wss:
+                for i, player_ws in enumerate(player_wss):
                     try:
                         game_start_reply = {
                             "command": "game_start",
                             "game_session_uuid": game_session_uuid,
                         }
                         player_ws.send(json.dumps(game_start_reply))
+                        logger.debug(
+                            "Game start notice sent to player %s", player_ids[i]
+                        )
                     except (ConnectionError, OSError, BrokenPipeError):
-                        pass
+                        logger.warning(
+                            "Game start notice failed: player %s", player_ids[i]
+                        )
 
 
 class GameSessionWatchdog:
@@ -159,6 +179,7 @@ class GameSessionWatchdog:
             with self.game_state.lock:
                 sessions_to_check = list(self.game_state.game_sessions.items())
 
+            active_sessions = 0
             for game_session_uuid, session in sessions_to_check:
                 # Only monitor sessions that haven't started yet
                 if session.game_started:
@@ -184,6 +205,13 @@ class GameSessionWatchdog:
             session (GameSession): The game session object
             inactive_players (List[str]): List of inactive player IDs
         """
+        logger.info(
+            "Session %s: Removing %d inactive players: %s",
+            session.game_session_uuid,
+            len(inactive_players),
+            inactive_players,
+        )
+
         # Notify and remove inactive players
         for player_id in inactive_players:
             if player_id in session.player_websockets:
@@ -195,8 +223,9 @@ class GameSessionWatchdog:
                         json.dumps(inactive_message)
                     )
                     session.player_websockets[player_id].close()
+                    logger.debug("Inactive notice sent to player %s", player_id)
                 except (ConnectionError, OSError, BrokenPipeError):
-                    pass
+                    logger.debug("Inactive notice failed: player %s", player_id)
 
             session.remove_player(player_id)
 
@@ -210,19 +239,23 @@ class GameSessionWatchdog:
             game_session_uuid (str): UUID of the game session to end
             session (GameSession): The game session object to end
         """
+        logger.info(
+            "Session %s: Ending game, insufficient players",
+            game_session_uuid,
+        )
+
         not_enough_players_message = {
             "command": "not_enough_players",
         }
 
         # Notify remaining players
-        for player_ws in session.player_websockets.values():
+        for player_id, player_ws in session.player_websockets.items():
             try:
                 player_ws.send(json.dumps(not_enough_players_message))
                 player_ws.close()
+                logger.debug("Insufficient players notice sent to player %s", player_id)
             except (ConnectionError, OSError, BrokenPipeError):
-                pass
+                logger.debug("Insufficient players notice failed: player %s", player_id)
 
         # Remove the game session
-        with self.game_state.lock:
-            if game_session_uuid in self.game_state.game_sessions:
-                del self.game_state.game_sessions[game_session_uuid]
+        self.game_state.remove_game_session(game_session_uuid)

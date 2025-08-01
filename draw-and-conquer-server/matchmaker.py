@@ -1,9 +1,12 @@
 import json
+import logging
 import time
 from collections import OrderedDict
 from typing import Dict, Optional, Tuple
 
 from server import ServerState, WebSocketInterface
+
+logger = logging.getLogger(__name__)
 
 
 class MatchmakerState(ServerState):
@@ -49,6 +52,14 @@ class MatchmakerState(ServerState):
             self.player_names[player_id] = player_name
             self.player_websockets[player_id] = ws
 
+            queue_length = len(self.matchmaking_queue)
+            logger.info(
+                "Player %s (%s) joined queue, queue length: %d",
+                player_id,
+                player_name,
+                queue_length,
+            )
+
     def dequeue_player(self) -> Optional[Tuple[str, str, WebSocketInterface]]:
         """
         Remove and return the next player from the queue.
@@ -68,7 +79,14 @@ class MatchmakerState(ServerState):
                 del self.player_names[player_id]
                 del self.player_websockets[player_id]
 
+                logger.debug(
+                    "Dequeued player %s, queue length: %d",
+                    player_id,
+                    len(self.matchmaking_queue),
+                )
                 return (player_id, player_name, player_ws)
+
+            logger.debug("Dequeue failed: empty queue")
             return None
 
     def remove_player(self, player_id: str) -> None:
@@ -79,10 +97,20 @@ class MatchmakerState(ServerState):
             player_id (str): Unique identifier for the player to remove
         """
         with self.lock:
+            was_in_queue = player_id in self.matchmaking_queue
             self.matchmaking_queue.pop(player_id, None)
             self.player_last_heartbeat.pop(player_id, None)
-            self.player_names.pop(player_id, None)
+            player_name = self.player_names.pop(player_id, None)
             self.player_websockets.pop(player_id, None)
+
+            if was_in_queue:
+                logger.info(
+                    "Removed player %s, queue length: %d",
+                    player_id,
+                    len(self.matchmaking_queue),
+                )
+            else:
+                logger.debug("Remove failed, player %s not in queue", player_id)
 
     def heartbeat_player(self, player_id: str) -> None:
         """
@@ -94,6 +122,9 @@ class MatchmakerState(ServerState):
         with self.lock:
             if player_id in self.matchmaking_queue:
                 self.player_last_heartbeat[player_id] = time.time()
+                logger.debug("Heartbeat from player %s", player_id)
+            else:
+                logger.warning("Heartbeat from player %s not in queue", player_id)
 
     def is_player_in_queue(self, player_id: str) -> bool:
         """
@@ -121,7 +152,7 @@ class MatchmakerState(ServerState):
 
 def matchmaker_request_handler(
     ws: WebSocketInterface,
-    _addr: Tuple[str, int],
+    addr: Tuple[str, int],
     data: str,
     server_state: MatchmakerState,
 ) -> None:
@@ -136,22 +167,27 @@ def matchmaker_request_handler(
     """
     try:
         request: Dict = json.loads(data)
+        logger.debug("Received matchmaker request from %s", addr)
 
         player_id = request.get("uuid")
         if not player_id:
+            logger.warning("Request missing player UUID from %s", addr)
             raise ValueError("Missing player UUID")
 
         command = request.get("command")
         if not command:
+            logger.warning("Request missing command from %s", addr)
             raise ValueError("Missing command")
 
         # Handle different commands
         if command == "enqueue":
             if server_state.is_player_in_queue(player_id):
+                logger.warning("Enqueue from player %s already in queue", player_id)
                 raise ValueError("Player already in queue")
 
             player_name = request.get("name")
             if not player_name:
+                logger.warning("Enqueue request missing player name from %s", player_id)
                 raise ValueError("Missing player name")
 
             server_state.enqueue_player(player_id, player_name, ws)
@@ -164,6 +200,7 @@ def matchmaker_request_handler(
 
         elif command == "queue_heartbeat":
             if not server_state.is_player_in_queue(player_id):
+                logger.warning("Heartbeat from player %s not in queue", player_id)
                 raise ValueError("Player not in queue")
 
             server_state.heartbeat_player(player_id)
@@ -173,9 +210,11 @@ def matchmaker_request_handler(
                 "queue_length": queue_length,
             }
             ws.send(json.dumps(reply))
+            logger.debug("Heartbeat response to player %s", player_id)
 
         elif command == "remove_from_queue":
             if not server_state.is_player_in_queue(player_id):
+                logger.warning("Remove request from player %s not in queue", player_id)
                 raise ValueError("Player not in queue")
 
             reply = {
@@ -183,11 +222,18 @@ def matchmaker_request_handler(
             }
             ws.send(json.dumps(reply))
             server_state.remove_player(player_id)
+            logger.debug(
+                "Player %s removed from queue, queue length: %d",
+                player_id,
+                server_state.get_queue_length(),
+            )
 
         else:
+            logger.warning("Unknown command '%s' from player %s", command, player_id)
             raise ValueError("Unknown command")
 
     except json.JSONDecodeError:
+        logger.error("Invalid JSON format from %s", addr)
         reply = {
             "status": "error",
             "error": "Invalid JSON format",
