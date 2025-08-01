@@ -422,7 +422,7 @@ def game_server_request_handler(
                 "command": "pen_up_broadcast",
                 "index": tile_index,
                 "colour": session.player_colours[player_id],
-                "status": claim_tile,
+                "status": command,
             }
             session.broadcast_message(broadcast_message, player_id)
 
