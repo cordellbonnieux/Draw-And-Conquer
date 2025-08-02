@@ -64,6 +64,9 @@ If the queue length is greater than n, queue server will start a game server and
 {
     "command": "game_start",
     "game_session_uuid": "game-session-uuid",
+    "lobby_size": 3,
+    "board_size": 64,
+    "colour_selection_timeout": 60
 }
 ```
 

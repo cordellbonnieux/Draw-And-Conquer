@@ -139,6 +139,9 @@ class QueueWatchdog:
                         game_start_reply = {
                             "command": "game_start",
                             "game_session_uuid": game_session_uuid,
+                            "lobby_size": self.matchmaker_state.lobby_size,
+                            "board_size": self.num_tiles,
+                            "colour_selection_timeout": self.colour_selection_timeout,
                         }
                         player_ws.send(json.dumps(game_start_reply))
                         logger.debug(
