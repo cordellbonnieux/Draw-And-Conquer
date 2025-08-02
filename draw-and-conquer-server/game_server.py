@@ -145,12 +145,16 @@ class GameSession:
             player_id (str): Unique identifier for the player
             ws (WebSocketInterface): WebSocket connection for the player
         """
-        self.player_websockets[player_id] = ws
-        logger.debug(
-            "Session %s: WebSocket registered for player %s",
-            self.game_session_uuid,
-            player_id,
-        )
+        if (
+            player_id not in self.player_websockets
+            or self.player_websockets[player_id] != ws
+        ):
+            self.player_websockets[player_id] = ws
+            logger.debug(
+                "Session %s: WebSocket registered for player %s",
+                self.game_session_uuid,
+                player_id,
+            )
 
     def get_inactive_players(self) -> List[str]:
         """
@@ -423,7 +427,6 @@ def game_server_request_handler(
     """
     try:
         request: Dict = json.loads(data)
-        logger.debug("Received game server request from %s", addr)
 
         # Extract required fields
         game_session_uuid = request.get("game_session_uuid")

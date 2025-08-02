@@ -167,7 +167,6 @@ def matchmaker_request_handler(
     """
     try:
         request: Dict = json.loads(data)
-        logger.debug("Received matchmaker request from %s", addr)
 
         player_id = request.get("uuid")
         if not player_id:
