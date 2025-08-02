@@ -1,18 +1,12 @@
-# CMPT371 Group2 Final Project - Draw & Conquer
+# Draw And Conquer
+## CMPT371 Group 2 Final Project
 
-## Application Flow (WIP)
+### Description
+This is a browser based multiplayer game, where players compete to fill in squares in a grid by clicking down on them until they change color. Each square can only be clicked on by one player at a time. A player wins when they have colored more squares than anyone else.
 
-- Client States: QUEUE, GAME, WAIT, SCOREBOARD
-- Matchmaking Server States: QUEUE, START
-- Game server States: GAME
-- Cell States (Server data structure): OPEN, CLOSED, USED
-
-### 1. QUEUE/START state
-
-Matchmaking server is always standby on port 9437 for players to enqueue.
+### Application Flow
 
 #### Name Input Flow
-
 Before joining the queue, players are prompted to enter their name. The client displays a name input form that:
 
 - Requires a non-empty name before allowing submission
@@ -184,8 +178,8 @@ After a game ends, the server sends the final results to all players. The client
 #### Scoring System
 
 - **Point Calculation**: Each cell occupied by a player earns them 1 point
-- **Total Possible Score**: 64 points (8x8 grid = 64 cells)
-- **Score Display**: Scores are shown as `player_score/64` (e.g., "15/64")
+- **Total Possible Score**: n^2 points
+- **Score Display**: Scores are shown as `player_score/(n^2)` (e.g., "15/64" for an 8 player game)
 
 #### Scoreboard Data Structure
 

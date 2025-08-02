@@ -47,7 +47,7 @@ export default function Queue(props: QueueProps): React.JSX.Element {
         return <NameInput onNameSubmit={handleNameSubmit} isVisible={true} />
     else
         return (<div>
-            <PlayerQueueDisplay playerName={playerName} queueLength={queueLength} />
+            <PlayerQueueDisplay playerName={playerName} queueLength={queueLength} ready={ready} />
             <ReadyButton ready={ready} toggleReady={toggleReady} />
         </div>)
 }
