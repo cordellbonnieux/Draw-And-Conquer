@@ -95,9 +95,11 @@ export default function App(): React.JSX.Element {
 
       switch (data.status) {
         case 'success':
-          console.log('heartbeat received')
-          setGame({...game, "numberOfPlayers": data.queue_length})
-          matchMakerHeartBeat()
+          if (data.queue_length) {
+            //NOTE At the moment no other data is sent with success responses
+            setGame({...game, "numberOfPlayers": data?.queue_length})
+            matchMakerHeartBeat()
+          }
           break
         case 'error':
           console.error("Server Error Message: ", data.error)
