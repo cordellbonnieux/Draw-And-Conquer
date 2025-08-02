@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import './App.css'
 import TitleBar from './components/TitleBar'
 import DenyAndConquerGame from './components/Game'
@@ -22,8 +22,8 @@ const GAME_PORT: String = process.env.REACT_APP_GAME_PORT ? process.env.REACT_AP
 export default function App(): React.JSX.Element {
   const { v4: uuidv4 } = require('uuid');
   const [uuid] = useState(() => uuidv4());
-  const [matchMakingSocket, setMatchMakingSocket] = useState<WebSocket | null>(null)
-  const [gameSocket, setGameSocket] = useState<WebSocket | null>(null)
+  const matchMakingSocketRef = useRef<WebSocket | null>(null);
+  const gameSocketRef = useRef<WebSocket | null>(null);
   const [state, setState] = useState<State>(State.QUEUE)
 
   /**
@@ -53,10 +53,10 @@ export default function App(): React.JSX.Element {
    */
   const body: () => React.JSX.Element = () => {
     if (state === State.QUEUE) 
-      return <Queue uuid={uuid} socket={matchMakingSocket} queueLength={game['numberOfPlayers']} />
+      return <Queue uuid={uuid} socket={matchMakingSocketRef.current} queueLength={game['numberOfPlayers']} />
 
     else if (state === State.GAME) 
-       return <DenyAndConquerGame uuid={uuid} ws={gameSocket} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} 
+       return <DenyAndConquerGame uuid={uuid} ws={gameSocketRef.current} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} 
        player_colour={getColour(game.colour)} squareStates={game.squares} 
        updateSquares={(newSquares) => setGame(prev => ({ ...prev, squares: newSquares }))}/>
 
@@ -75,6 +75,7 @@ export default function App(): React.JSX.Element {
    */
   function matchMakingSocketConnection() {
     const ws = new WebSocket('ws://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT)
+    matchMakingSocketRef.current = ws;
 
     ws.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data)
@@ -106,8 +107,6 @@ export default function App(): React.JSX.Element {
     ws.onerror = (error: Event) => {
       console.error('Websocket Error: ', error)
     }
-
-    setMatchMakingSocket(ws);
   }
 
   /**
@@ -115,6 +114,7 @@ export default function App(): React.JSX.Element {
    */
   function gameSocketConnection() {
     const ws = new WebSocket('ws://' + GAME_HOST + ':' + GAME_PORT)
+    gameSocketRef.current = ws;
 
     ws.onopen = () => {
       ws.send(JSON.stringify({
@@ -171,8 +171,6 @@ export default function App(): React.JSX.Element {
     ws.onerror = (error: Event) => {
       console.error('Websocket Error: ', error)
     }
-
-    setGameSocket(ws)
   }
   // update number of squares when numberOfPlayers change
   useEffect(() => {
@@ -185,7 +183,7 @@ export default function App(): React.JSX.Element {
     if (state === State.QUEUE) {
       setTimeout(() => {
         console.log('heartbeat sent')
-        matchMakingSocket?.send(JSON.stringify({
+        matchMakingSocketRef.current?.send(JSON.stringify({
           uuid,
           'command': 'queue_heartbeat'
         }))
@@ -194,9 +192,9 @@ export default function App(): React.JSX.Element {
   }
 
   useEffect(() => {
-    if (state === State.QUEUE && !matchMakingSocket) matchMakingSocketConnection()
-    if (state === State.GAME && !gameSocket) gameSocketConnection()
-  }, [state, matchMakingSocket])
+    if (state === State.QUEUE && !matchMakingSocketRef.current) matchMakingSocketConnection()
+    if (state === State.GAME && !gameSocketRef.current) gameSocketConnection()
+  }, [state, matchMakingSocketRef.current])
 
   const players = [
     { id: '1', name: 'Alice', score: 12 },
