@@ -179,7 +179,6 @@ class GameSessionWatchdog:
             with self.game_state.lock:
                 sessions_to_check = list(self.game_state.game_sessions.items())
 
-            active_sessions = 0
             for game_session_uuid, session in sessions_to_check:
                 # Only monitor sessions that haven't started yet
                 if session.game_started:

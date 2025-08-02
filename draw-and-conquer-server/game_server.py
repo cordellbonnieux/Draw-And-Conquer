@@ -612,7 +612,7 @@ def game_server_request_handler(
                 }
                 session.broadcast_message(game_win_message)
                 logger.info(
-                    "Session %s: Game ended! Winner: %s",
+                    "Session %s: Game ended, winner: %s",
                     game_session_uuid,
                     session.winner,
                 )
