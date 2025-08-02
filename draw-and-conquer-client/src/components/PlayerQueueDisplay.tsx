@@ -28,7 +28,7 @@ export default function PlayerQueueDisplay({ playerName, queueLength, ready }: P
         </h2>
         <div style={{'display': 'block', 'height': '32px'}}/>
         <h3 style={{'marginTop': '32px'}}>
-            {queueLength ? queueLength.toString() + ' players are ready to play' : 'Click the button to queue for a game'} 
+            {(queueLength && ready) ? queueLength.toString() + ' players are ready to play' : 'Click the button to queue for a game'} 
         </h3>
     </div>)
 }
