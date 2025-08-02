@@ -35,7 +35,8 @@ export default function App(): React.JSX.Element {
     'numberOfPlayers': 0,
     'colour': '',
     'players': {}, // player data structure would be nice to have too, right now it stores exactly as it comes in from the server
-    'squares': new Array<string>()
+    'squares': new Array<string>(),
+    'boardSize': 0
   })
 
   /**
@@ -82,9 +83,9 @@ export default function App(): React.JSX.Element {
 
       switch (data.command) {
         case 'game_start':
-          const arr: string[] = Array(Math.pow(game.numberOfPlayers.valueOf(), 2)).fill('#ffffff')
-          setGame({...game, 'uuid': data.game_session_uuid, squares: arr})
-          setState(State.GAME) 
+          const arr: string[] = Array(data.board_size).fill('#ffffff')
+          setGame({...game, 'uuid': data.game_session_uuid, squares: arr, numberOfPlayers: data.lobby_size})
+          setState(State.GAME)
           ws.close()
           break
         case 'heartbeat_timeout':
