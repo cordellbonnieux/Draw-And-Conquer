@@ -1,10 +1,10 @@
-# Getting Started with Create React App
-
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-
 ## Available Scripts
 
 In the project directory, you can run:
+
+### `npm install`
+
+Installs necessary dependencies to build the application.
 
 ### `npm start`
 
@@ -29,18 +29,23 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
+## Running The Client Locally
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### `npm install -g serve`
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+To install Serve, which can be used to host a local production build.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### `serve -s build`
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+To run Serve with production build.
 
-## Learn More
+## Configuring Server Connection
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+A file `.env` must be in this directory containing the following fields, without quotations.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+REACT_APP_MATCH_MAKING_HOST="matchmaking server host"
+REACT_APP_MATCH_MAKING_PORT="matchmaking server port"
+REACT_APP_GAME_HOST="game server host"
+REACT_APP_GAME_PORT="game server port"
+```
