@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type Player = {
-  id: string,
+  uuid: string,
   name: string,
   score: number
 }
@@ -53,16 +53,16 @@ export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps
         <tbody>
           {sortedPlayers.map((player, idx) => (
             <tr
-              key={player.id}
+              key={player.uuid}
               style={{
-                backgroundColor: player.id === currentPlayerId ? '#ffe082' : idx % 2 === 0 ? '#fafafa' : '#fff',
-                fontWeight: player.id === currentPlayerId ? 'bold' : 'normal',
+                backgroundColor: player.uuid === currentPlayerId ? '#ffe082' : idx % 2 === 0 ? '#fafafa' : '#fff',
+                fontWeight: player.uuid === currentPlayerId ? 'bold' : 'normal',
                 transition: 'background 0.2s',
               }}
             >
               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{ranks[idx]}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.name}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.score}/64</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.score}/{Math.pow(sortedPlayers.length, 2)}</td>
             </tr>
           ))}
         </tbody>
