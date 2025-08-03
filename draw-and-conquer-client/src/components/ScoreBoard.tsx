@@ -8,10 +8,12 @@ export type Player = {
 
 export type ScoreBoardProps = {
   players: Player[],
-  currentPlayerId: string,
+  currentPlayerId: string
 }
 
 export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps): React.JSX.Element {
+  // Calculate total score as number of players squared
+  const totalScore = players.length ** 2
   // Sort players by score descending
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
   console.log(sortedPlayers)
@@ -32,7 +34,8 @@ export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps
   })
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '2rem 0' }}>
+      <h2 style={{ marginBottom: '0.5rem', color: '#333' }}>Game Results</h2>
       <table
         style={{
           width: '400px',
@@ -62,7 +65,7 @@ export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps
             >
               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{ranks[idx]}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.name}</td>
-              <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.score}/64</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{player.score}/{totalScore}</td>
             </tr>
           ))}
         </tbody>

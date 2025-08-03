@@ -67,9 +67,21 @@ export default function App(): React.JSX.Element {
       return <Queue uuid={uuid} socket={matchMakingSocketRef.current} queueLength={game['numberOfPlayers']} />
 
     else if (state === State.GAME) 
-       return <DenyAndConquerGame uuid={uuid} ws={gameSocketRef.current} game_session_uuid={game.uuid} number_of_players={game.numberOfPlayers} 
-       player_colour={getColour(game.colour)} squareStates={game.squares} 
-       updateSquares={(newSquares) => setGame(prev => ({ ...prev, squares: newSquares }))}/>
+       return <DenyAndConquerGame 
+         uuid={uuid} 
+         ws={gameSocketRef.current} 
+         game_session_uuid={game.uuid} 
+         number_of_players={game.numberOfPlayers} 
+         player_colour={getColour(game.colour)} 
+         squareStates={game.squares} 
+         updateSquares={(newSquares) => setGame(prev => ({ ...prev, squares: newSquares }))}
+         players={Object.values(game.players).map((player: any) => ({
+           id: player.uuid || '',
+           name: player.name || '',
+           colour: player.colour || ''
+         }))}
+         currentPlayerId={uuid}
+       />
 
     else if (state === State.SCOREBOARD) 
       return <ScoreBoard players={scoreboardData} currentPlayerId={uuid} />
@@ -94,7 +106,7 @@ export default function App(): React.JSX.Element {
       switch (data.command) {
         case 'game_start':
           const arr: string[] = Array(data.board_size).fill('#ffffff')
-          setGame({...game, 'uuid': data.game_session_uuid, squares: arr, numberOfPlayers: data.lobby_size})
+          setGame({...game, 'uuid': data.game_session_uuid, squares: arr, numberOfPlayers: data.lobby_size, boardSize: data.board_size})
           setState(State.GAME)
           ws.close()
           break
@@ -169,8 +181,12 @@ export default function App(): React.JSX.Element {
             return { ...prev, squares }
           })
           break
-        case 'game_win': //NOTE unused?
+        case 'game_win':
           console.log('game win triggered!')
+          // The server sends scoreboard data in the game_win command as 'players'
+          if (data.players) {
+            setScoreboardData(data.players)
+          }
           setWinner({
             'colour': data.winnder_colour,
             'uuid': data.winnder_uuid,
@@ -179,10 +195,11 @@ export default function App(): React.JSX.Element {
           setState(State.SCOREBOARD)
           ws.close()
           break
-        case 'scoreboard': // NEVER TRIGGERED FROM SERVER
+        case 'scoreboard':
           setScoreboardData(data.players)
           console.log('scoreboard data', data.players)
           setState(State.SCOREBOARD)
+          break
       }
     }
 

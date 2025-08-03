@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 
 type GameProps = {
   uuid: String,
@@ -7,12 +7,55 @@ type GameProps = {
   number_of_players: Number,
   player_colour: Array<string>,
   squareStates: Array<string>,
-  updateSquares: (squares: Array<string>) => void
+  updateSquares: (squares: Array<string>) => void,
+  players: Array<{id: string, name: string, colour: string}>,
+  currentPlayerId: string
 }
 
-const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squareStates, updateSquares }) => {
+const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squareStates, updateSquares, players, currentPlayerId }) => {
   const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null)
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null)
+
+  // Get the claimed color for a player (the darker color) - using exact same mapping as getColour function in App.tsx
+  const getPlayerClaimedColor = (playerColour: string) => {
+    if (playerColour === 'blue') return "#0000FF"
+    else if (playerColour === 'green') return "#008000"
+    else if (playerColour === 'red') return "#EE4B2B"
+    else if (playerColour === 'orange') return "#FFA500"
+    else if (playerColour === 'purple') return "#800080"
+    else if (playerColour === 'pink') return "#FF1493"
+    else if (playerColour === 'cyan') return "#00CED1"
+    return "#cccccc"
+  }
+
+  // Calculate scores for each player based on claimed squares
+  const scores = useMemo(() => {
+    const scoreMap: {[key: string]: number} = {}
+    
+    // Initialize scores for all players
+    players.forEach(player => {
+      scoreMap[player.id] = 0
+    })
+    
+    // Count claimed squares for each player
+    squareStates.forEach((squareColor, index) => {
+      if (squareColor !== '#ffffff') {
+        // Find which player this color belongs to
+        const player = players.find(p => {
+          const claimedColor = getPlayerClaimedColor(p.colour)
+          return squareColor === claimedColor
+        })
+        if (player) {
+          scoreMap[player.id]++
+        }
+      }
+    })
+    
+    return scoreMap
+  }, [squareStates, players])
+
+  // Calculate score needed to win
+  const scoreToWin = Math.floor((number_of_players.valueOf() ** 2) / number_of_players.valueOf()) + 1
 
   const handleMouseDown = (index: number): void => {
     if (squareStates[index] !== '#ffffff') return
@@ -69,6 +112,12 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
   return (
     <div>
       <h2>Deny and Conquer - Game Board</h2>
+      
+      {/* Score Requirement Display */}
+      <div style={{ marginBottom: '1rem' }}>
+        <h3 style={{ marginBottom: '0.5rem', color: '#333' }}>Score to win: {scoreToWin} cells</h3>
+      </div>
+
       {<div>
         {/* Draw Game Board */}
         <div
