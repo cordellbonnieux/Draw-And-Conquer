@@ -604,18 +604,25 @@ def game_server_request_handler(
 
             # Check for win condition
             if session.game_ended:
+                scoreboard = []
+                for pid in session.player_ids:
+                    score = sum(
+                        1 for owner in session.tile_owners.values() if owner == pid
+                    )
+                    scoreboard.append(
+                        {
+                            "uuid": pid,
+                            "name": session.player_names[pid],
+                            "score": score,
+                        }
+                    )
+
                 game_win_message = {
                     "command": "game_win",
-                    "winner_uuid": session.winner,
-                    "winner_name": session.player_names[session.winner],
-                    "winner_colour": session.player_colours[session.winner],
+                    "players": scoreboard
                 }
                 session.broadcast_message(game_win_message)
-                logger.info(
-                    "Session %s: Game ended, winner: %s",
-                    game_session_uuid,
-                    session.winner,
-                )
+                logger.info("Session %s: Game ended", game_session_uuid)
 
         else:
             logger.warning(

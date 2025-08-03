@@ -220,10 +220,13 @@ After each successful tile claimed, the server will check if the player has clai
 // Server -> Client Game Win Notification
 {
     "command": "game_win",
-    "winner_uuid": "player-uuid",
-    "winner_name": "Player 1",
-    "winner_colour": "red",
+    "scoreboard": [
+        { "uuid": "uuid-1", "name": "Alice", "score": 12 },
+        { "uuid": "uuid-2", "name": "Bob", "score": 15 },
+        { "uuid": "uuid-3", "name": "You", "score": 10 }
+    ]
 }
+```
 
 If player sends any request after the game has ended, the server will return an error.
 
