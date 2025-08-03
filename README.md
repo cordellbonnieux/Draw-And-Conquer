@@ -291,6 +291,7 @@ After a game ends, the server sends the final results to all players. The client
 - Players with the same score share the same rank (e.g., 1, 2, 2, 4).
 - The current player's row is highlighted for easy identification.
 - The entire scoreboard is visible, not just the top scores.
+- A "Play Again" button allows players to restart the game and return to the queue.
 
 **Example Table:**
 
@@ -304,5 +305,5 @@ If two or more players have the same score, they share the same rank, and the ne
 
 #### Transition
 
-- After viewing the scoreboard, the client may automatically or manually return to the QUEUE state to start a new game
+- After viewing the scoreboard, players can click the "Play Again" button to return to the QUEUE state and start a new game
 - The server resets its state to QUEUE, ready for new matchmaking
