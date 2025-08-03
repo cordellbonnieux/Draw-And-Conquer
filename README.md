@@ -239,11 +239,11 @@ The server will then notify all other players in the game session of the pen up 
     "colour": "red",
     "status": "pen_up_tile_claimed", // or "pen_up_tile_not_claimed"
 }
-
+```
 
 ##### Winning Conditions
 
-```
+
 
 After each successful tile claimed, the server will check if the player has claimed enough tiles to win the game. floor(num_tiles / num_players) + 1 tiles are required to win the game. If a player has won the game, the server will notify all players in the game session.
 
