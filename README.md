@@ -6,7 +6,7 @@ This is a browser based multiplayer game, where players compete to fill in squar
 
 ### Application Flow
 
-#### Name Input Flow
+#### Name Input
 Before joining the queue, players are prompted to enter their name. The client displays a name input form that:
 
 - Requires a non-empty name before allowing submission
@@ -80,7 +80,7 @@ If the queue length is greater than n, queue server will start a game server, as
 }
 ```
 
-Player will then communicate with the game server on port 9438 using the provided game session UUID. Game session UUID make sure the support for multiple game sessions in parallel.
+Player will then communicate with the game server using the provided game session UUID. Game session UUID make sure the support for multiple game sessions in parallel.
 
 Player can leave the queue before the game starts, which will remove the player from the queue and stops the heartbeat.
 
@@ -104,17 +104,17 @@ Player can leave the queue before the game starts, which will remove the player 
 
 ---
 
-### 2. GAME state
+#### Game Board
 
-#### Description
-- Upon transition to this state, create a playerCount by playerCount grid on client.
-- The server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player).
-- Each client may only start to draw on an OPEN cell.
-- When a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player.
-- If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again.
-- Each action by any user will trigger a retransmission of the current state of the game board to all players.
+Upon transition to the game, an n x n board is created on the client, with the corresponding data structure on the server. The variable n is determined by the server on startup, and represents the number of players in a game session; i.e. when there are n players in the queue, a new game is created which generates an n x n board clientside.
 
-#### Winning Conditions
+- The server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
+- Each client may only start to draw on an OPEN cell
+- When a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player
+- If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again
+- Each action by any user will trigger a retransmission of the current state of the game board to all players
+
+##### Winning Conditions (WIP)
 - **Primary Win Condition**: First player to occupy >= `floor(64/n) + 1` cells wins immediately, where `n` is the number of players
   - 2 players: 33 cells needed to win
   - 3 players: 22 cells needed to win
@@ -126,13 +126,13 @@ Player can leave the queue before the game starts, which will remove the player 
 - When a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state.
 - If another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state.
 
-#### Game State Data Structure
+##### Game State Data Structure
 - Cell States: `OPEN`, `USED`, `CLOSED`
 - Each cell contains:
   - `state`: CellState
   - `owner`: Player UUID (if USED or CLOSED)
 
-#### Client/Server Commands
+##### Client/Server Commands
 
 - **UPDATE_BOARD**
   - Request the current game board state and any updates from other players.
@@ -171,11 +171,11 @@ Player can leave the queue before the game starts, which will remove the player 
 
 ---
 
-### 3. SCOREBOARD state
+### SCOREBOARD
 
 After a game ends, the server sends the final results to all players. The client transitions to the SCOREBOARD state, where the final rankings and scores are displayed.
 
-#### Scoring System
+#### Scoring System (WIP)
 
 - **Point Calculation**: Each cell occupied by a player earns them 1 point
 - **Total Possible Score**: n^2 points
@@ -222,5 +222,5 @@ If two or more players have the same score, they share the same rank, and the ne
 
 #### Transition
 
-- After viewing the scoreboard, the client may automatically or manually return to the QUEUE state to start a new game.
-- The server resets its state to QUEUE, ready for new matchmaking.
+- After viewing the scoreboard, the client may automatically or manually return to the QUEUE state to start a new game
+- The server resets its state to QUEUE, ready for new matchmaking
