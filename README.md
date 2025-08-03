@@ -23,6 +23,8 @@ The queue interface displays:
 - Current queue status: "[X] of [Y] players are ready"
 - A ready/not ready toggle button
 
+Matchmaking server is always standby for players to enqueue. When player enqueues, they must provide a UUID and a name. The name is not used in the matchmaking process, but it is used to identify the player in the game session.
+
 ```json
 // Client -> Server Enqueue Request
 {
@@ -77,6 +79,9 @@ If the queue length is greater than n, queue server will start a game server, as
 {
     "command": "game_start",
     "game_session_uuid": "game-session-uuid",
+    "lobby_size": 3,
+    "board_size": 64,
+    "colour_selection_timeout": 60
 }
 ```
 
@@ -106,6 +111,8 @@ Player can leave the queue before the game starts, which will remove the player 
 
 #### Game Board
 
+After player is notified, they will communicate with the game server using the game session UUID and their UUID. If the game server determines the game session or the player dose not belong to the game session, it will return an error.
+
 Upon transition to the game, an n x n board is created on the client, with the corresponding data structure on the server. The variable n is determined by the server on startup, and represents the number of players in a game session; i.e. when there are n players in the queue, a new game is created which generates an n x n board clientside.
 
 - The server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
@@ -114,98 +121,173 @@ Upon transition to the game, an n x n board is created on the client, with the c
 - If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again
 - Each action by any user will trigger a retransmission of the current state of the game board to all players
 
-##### Winning Conditions (WIP)
-- **Primary Win Condition**: First player to occupy >= `floor(64/n) + 1` cells wins immediately, where `n` is the number of players
-  - 2 players: 33 cells needed to win
-  - 3 players: 22 cells needed to win
-  - 4 players: 17 cells needed to win
-  - 6 players: 12 cells needed to win
-  - 8 players: 9 cells needed to win
-- **Timeout Win Condition**: If no player reaches the required threshold within the time limit, the player with the highest number of cells occupied wins
-- **Game Duration**: Recommended 4-5 minutes per game session
-- When a player wins, the server transmits the results to each player, this will trigger the client to change to the SCOREBOARD state and the server will return to QUEUE state.
-- If another user connects to a client while the server is in the GAME state, the client will change to a WAITING state and will periodically ping the server for its state, if QUEUE is returned the client will also change to QUEUE state.
+The player will first request a colour for their pen.
 
-##### Game State Data Structure
-- Cell States: `OPEN`, `USED`, `CLOSED`
-- Each cell contains:
-  - `state`: CellState
-  - `owner`: Player UUID (if USED or CLOSED)
+```json
+// Client -> Server Pen Colour Request
+{
+    "game_session_uuid": "game-session-uuid",   
+    "uuid": "player-uuid",
+    "command": "pen_colour_request",
+}
+// Server -> Client Pen Colour Response
+{
+    "command": "pen_colour_response",
+    "status": "success",
+    "colour": "red",
+}
+{
+    "status": "error",
+    "error": "abcdefg",
+}
+```
 
-##### Client/Server Commands
+After all players have requested their pen colours, the game server will notify all players of the current players in the game session.
 
-- **UPDATE_BOARD**
-  - Request the current game board state and any updates from other players.
-  - **Server Response Example:**
-    ```json
-    {
-      "index": 10,
-      "status": "complete", // or "in-progress", "failed"
-      "color": "blue"
+```json
+// Server -> Client Current Players Notification
+{
+    "command": "current_players",
+    "players": {
+        "uuid-1": {
+            "colour": "red",
+            "name": "Player 1",
+        },
+        "uuid-2": {
+            "colour": "blue",
+            "name": "Player 2",
+        },
+        "uuid-3": {
+            "colour": "green",
+            "name": "Player 3",
+        }
     }
-    ```
+}
 
-- **PENDOWN**
-  - Notify the server that the player pressed down on a square to attempt scribbling it.
-  - **Client Command Example:**
-    ```json
-    {
-      "uuid": "player-uuid",
-      "index": number,  // the index of the square (0–63)
-      "status": "in-progress"
-    }
-    ```
+If player goes one minute without sending any pen colour request, they will be considered inactive and removed from the game session. Their connection will be closed. If less than m players in the game session after the removal, the game session will be prematurely ended and all players will be notified. After the game starts, no further inactivate checks will be performed.
 
-- **PENUP**
-  - Notify the server that the player released the mouse (pen up) and finished the attempt.
-  - **Client Command Example:**
-    ```json
-    {
-      "uuid": "player-uuid",
-      "index": number,  // the index of the square
-      "status": "complete" // or "failed"
-    }
-    ```
-  - "complete" -> Player held pen down for over 1 second; server can mark square as taken.
-  - "failed" -> Player released early; server may ignore or notify others.
+```json
+// Server -> Client Inactive Player Notification
+{
+    "command": "inactive_player",
+}
+// Server -> Client Not Enough Players Notification
+{
+    "command": "not_enough_players",
+}
+```
 
+When the player starts holding the pen, they will send a pen down request to the game server. This request will lock the tile for the player if it is not already locked by another player. If the tile is already locked, the server will return an error.
+
+```json
+// Client -> Server Pen Down Request
+{
+    "game_session_uuid": "game-session-uuid",   
+    "uuid": "player-uuid",
+    "command": "pen_down",
+    "index": 0,
+}
+// Server -> Client Pen Down Response
+{
+    "status": "success"
+}
+{
+    "status": "error",
+    "error": "abcdefg",
+}
+```
+
+The server will then notify all other players in the game session of the pen down request, if the request was successful.
+
+```json
+// Server -> Client Pen Down Broadcast
+{
+    "command": "pen_down_broadcast",
+    "index": 0,
+    "colour": "red",
+}
+```
+
+When the player stops holding the pen, they will send a pen up request to the game server. This will unlock the tile for the player.
+
+```json
+// Client -> Server Pen Up Request
+{
+    "game_session_uuid": "game-session-uuid",   
+    "uuid": "player-uuid",
+    "command": "pen_up_tile_claimed",
+    // "command": "pen_up_tile_not_claimed",
+    "index": 0,
+}
+// Server -> Client Pen Up Response
+{
+    "status": "success"
+}
+{
+    "status": "error",
+    "error": "abcdefg",
+}
+```
+
+The server will then notify all other players in the game session of the pen up request, if the request was successful.
+
+```json
+// Server -> Client Pen Up Broadcast
+{
+    "command": "pen_up_broadcast",
+    "index": 0,
+    "colour": "red",
+    "status": "pen_up_tile_claimed", // or "pen_up_tile_not_claimed"
+}
+
+
+##### Winning Conditions
+
+```
+
+After each successful tile claimed, the server will check if the player has claimed enough tiles to win the game. floor(num_tiles / num_players) + 1 tiles are required to win the game. If a player has won the game, the server will notify all players in the game session.
+
+```json
+// Server -> Client Game Win Notification
+{
+    "command": "game_win",
+    "players": [
+        { "uuid": "uuid-1", "name": "Alice", "score": 12 },
+        { "uuid": "uuid-2", "name": "Bob", "score": 15 },
+        { "uuid": "uuid-3", "name": "You", "score": 10 }
+    ]
+}
+```
+
+If player sends any request after the game has ended, the server will return an error.
+
+```json
+// Server -> Client Game Ended Error
+{
+    "status": "error",
+    "error": "Game has already ended"
+}
+```
+
+### Unknown Command Error
+
+If the game server receives a command that it does not recognize, it will return an error.
+
+```json
+// Server -> Client Unknown Command Error
+{
+    "status": "error",
+    "error": "Unknown command"
+}
+```
 ---
 
 ### SCOREBOARD
 
 After a game ends, the server sends the final results to all players. The client transitions to the SCOREBOARD state, where the final rankings and scores are displayed.
 
-#### Scoring System (WIP)
-
-- **Point Calculation**: Each cell occupied by a player earns them 1 point
-- **Total Possible Score**: n^2 points
-- **Score Display**: Scores are shown as `player_score/(n^2)` (e.g., "15/64" for an 8 player game)
-
-#### Scoreboard Data Structure
-
-The server sends a list of all players and their scores. Each player object contains:
-- `id`: Unique identifier for the player (UUID)
-- `name`: Player's display name
-- `score`: Final score for the game session (number of cells occupied)
-
-**Example Server Response:**
-```json
-{
-  "command": "scoreboard",
-  "status": "success",
-  "players": [
-    { "id": "uuid-1", "name": "Alice", "score": 12 },
-    { "id": "uuid-2", "name": "Bob", "score": 15 },
-    { "id": "uuid-3", "name": "You", "score": 10 }
-  ],
-  "currentPlayerId": "uuid-3"
-}
-```
-
-#### Client Rendering
-
 - The client displays a table (scoreboard) with all players, their scores, and their ranking.
-- Scores are displayed in the format `player_score/64` (e.g., "15/64")
+- Scores are displayed in the format `player_score/num_of_players^2` (e.g., "15/64")
 - Players with the same score share the same rank (e.g., 1, 2, 2, 4).
 - The current player's row is highlighted for easy identification.
 - The entire scoreboard is visible, not just the top scores.

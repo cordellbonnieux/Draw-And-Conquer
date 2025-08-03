@@ -166,7 +166,6 @@ export default function App(): React.JSX.Element {
           })
           break
         case 'game_win':
-          console.log(data)
           setScoreboardData(data.players)
           setState(State.SCOREBOARD)
           ws.close()
