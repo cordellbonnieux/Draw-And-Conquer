@@ -40,8 +40,18 @@ export default function App(): React.JSX.Element {
   })
 
   /**
+   * Stores the scoreboard after game is complete
+   */
+  const [scoreboardData, setScoreboardData] = useState([])
+
+  /**
    * Populated when a player wins a game, scoreboard is updated with this var
+   * 
+   * UNUSED?
+   * 
+   * 
    * TODO pop this prop in SscoreBoard component
+   * 
    */
   const [winner, setWinner] = useState({
     'uuid': '',
@@ -62,7 +72,7 @@ export default function App(): React.JSX.Element {
        updateSquares={(newSquares) => setGame(prev => ({ ...prev, squares: newSquares }))}/>
 
     else if (state === State.SCOREBOARD) 
-      return <ScoreBoard uuid={uuid} players={players} currentPlayerId={currentPlayerId} /> // winner var goes in here
+      return <ScoreBoard players={scoreboardData} currentPlayerId={uuid} />
 
     else if (state === State.WAIT) 
       return <div>TODO WAIT</div>
@@ -147,19 +157,20 @@ export default function App(): React.JSX.Element {
           break
         case 'pen_up_broadcast':
           setGame(prev => {
-            const squares = [...prev.squares];
-            squares[data.index] = data.status == "pen_up_tile_claimed" ? getColour(data.colour)[1] : '#ffffff';
-            return { ...prev, squares };
-          });
+            const squares = [...prev.squares]
+            squares[data.index] = data.status == "pen_up_tile_claimed" ? getColour(data.colour)[1] : '#ffffff'
+            return { ...prev, squares }
+          })
           break
         case 'pen_down_broadcast':
           setGame(prev => {
-            const squares = [...prev.squares];
-            squares[data.index] = getColour(data.colour)[0];
-            return { ...prev, squares };
-          });
+            const squares = [...prev.squares]
+            squares[data.index] = getColour(data.colour)[0]
+            return { ...prev, squares }
+          })
           break
-        case 'game_win':
+        case 'game_win': //NOTE unused?
+          console.log('game win triggered!')
           setWinner({
             'colour': data.winnder_colour,
             'uuid': data.winnder_uuid,
@@ -168,6 +179,10 @@ export default function App(): React.JSX.Element {
           setState(State.SCOREBOARD)
           ws.close()
           break
+        case 'scoreboard': // NEVER TRIGGERED FROM SERVER
+          setScoreboardData(data.players)
+          console.log('scoreboard data', data.players)
+          setState(State.SCOREBOARD)
       }
     }
 
@@ -175,12 +190,6 @@ export default function App(): React.JSX.Element {
       console.error('Websocket Error: ', error)
     }
   }
-  // update number of squares when numberOfPlayers change
-  useEffect(() => {
-    setGame(prev => ({ ...prev,
-      squares:  Array(Math.pow(prev.numberOfPlayers.valueOf(), 2)).fill('#ffffff')
-    }));
-  }, [game.numberOfPlayers])
 
   function matchMakerHeartBeat(): void {
     if (state === State.QUEUE) {
@@ -194,20 +203,18 @@ export default function App(): React.JSX.Element {
     }
   }
 
+  // update number of squares when numberOfPlayers change
+  useEffect(() => {
+    setGame(prev => ({ ...prev,
+      squares:  Array(Math.pow(prev.numberOfPlayers.valueOf(), 2)).fill('#ffffff')
+    }));
+  }, [game.numberOfPlayers])
+
+  // Establish connection to the servers given client state
   useEffect(() => {
     if (state === State.QUEUE && !matchMakingSocketRef.current) matchMakingSocketConnection()
     if (state === State.GAME && !gameSocketRef.current) gameSocketConnection()
   }, [state, matchMakingSocketRef.current])
-
-  const players = [
-    { id: '1', name: 'Alice', score: 12 },
-    { id: '2', name: 'Bob', score: 15 },
-    { id: '3', name: 'You', score: 10 },
-    { id: '4', name: 'Jane', score: 10 },
-    { id: '200', name: 'Jim', score: 8 },
-    { id: '5', name: 'Tim', score: 9 },
-  ];
-  const currentPlayerId = '3';
 
   return (
     <div className="App" style={

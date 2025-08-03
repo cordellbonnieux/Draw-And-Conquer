@@ -1,35 +1,35 @@
 import React from 'react';
 
 export type Player = {
-  id: string;
-  name: string;
-  score: number;
-};
+  id: string,
+  name: string,
+  score: number
+}
 
 export type ScoreBoardProps = {
-  uuid: string,
-  players: Player[];
-  currentPlayerId: string;
-};
+  players: Player[],
+  currentPlayerId: string,
+}
 
-export default function ScoreBoard({ uuid, players, currentPlayerId }: ScoreBoardProps) {
+export default function ScoreBoard({ players, currentPlayerId }: ScoreBoardProps): React.JSX.Element {
   // Sort players by score descending
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
+  console.log(sortedPlayers)
 
   // Compute ranks with handling for ties
-  let lastScore: number | null = null;
-  let lastRank = 0;
-  let skip = 1;
+  let lastScore: number | null = null
+  let lastRank = 0
+  let skip = 1
   const ranks = sortedPlayers.map((player, idx) => {
     if (lastScore === null || player.score !== lastScore) {
-      lastRank = idx + 1;
-      skip = 1;
+      lastRank = idx + 1
+      skip = 1
     } else {
-      skip++;
+      skip++
     }
-    lastScore = player.score;
-    return lastRank;
-  });
+    lastScore = player.score
+    return lastRank
+  })
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', margin: '2rem 0' }}>
@@ -68,5 +68,5 @@ export default function ScoreBoard({ uuid, players, currentPlayerId }: ScoreBoar
         </tbody>
       </table>
     </div>
-  );
+  )
 }
