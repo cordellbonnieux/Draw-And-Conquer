@@ -6,7 +6,7 @@ import ScoreBoard from './components/ScoreBoard'
 import Queue from './components/Queue'
 
 // App UI state
-enum State {QUEUE, GAME, SCOREBOARD, WAIT}
+enum State {QUEUE, GAME, SCOREBOARD}
 
 // Environment variables - dictates servers & ports
 const MATCH_MAKING_HOST: String = process.env.REACT_APP_MATCH_MAKING_HOST ? process.env.REACT_APP_MATCH_MAKING_HOST : 'localhost'
@@ -49,7 +49,6 @@ export default function App(): React.JSX.Element {
    * 
    * UNUSED?
    * 
-   * 
    * TODO pop this prop in SscoreBoard component
    * 
    */
@@ -85,12 +84,9 @@ export default function App(): React.JSX.Element {
 
     else if (state === State.SCOREBOARD) 
       return <ScoreBoard players={scoreboardData} currentPlayerId={uuid} />
-
-    else if (state === State.WAIT) 
-      return <div>TODO WAIT</div>
     
     else 
-      return <div>Something went wrong!</div>
+      return <div style={{'display': 'block', 'margin': '50vw auto 0 auto'}}>404: Something went wrong!</div>
   }
 
   /**
@@ -144,7 +140,7 @@ export default function App(): React.JSX.Element {
     ws.onopen = () => {
       ws.send(JSON.stringify({
         'game_session_uuid': game.uuid,
-        'uuid': uuid,
+        uuid,
         'command': 'pen_colour_request'
       }))
     }
