@@ -1,12 +1,15 @@
 # Draw And Conquer
+
 ## CMPT371 Group 2 Final Project
 
 ### Description
+
 This is a browser based multiplayer game, where players compete to fill in squares in a grid by clicking down on them until they change color. Each square can only be clicked on by one player at a time. A player wins when they have colored more squares than anyone else.
 
 ### Application Flow
 
 #### Name Input
+
 Before joining the queue, players are prompted to enter their name. The client displays a name input form that:
 
 - Requires a non-empty name before allowing submission
@@ -19,6 +22,7 @@ After entering their name, players see the queue interface with a personalized w
 #### Queue Interface
 
 The queue interface displays:
+
 - A welcome message with the player's name: "Welcome, [PlayerName]!"
 - Current queue status: "[X] of [Y] players are ready"
 - A ready/not ready toggle button
@@ -111,15 +115,15 @@ Player can leave the queue before the game starts, which will remove the player 
 
 #### Game Board
 
-After player is notified, they will communicate with the game server using the game session UUID and their UUID. If the game server determines the game session or the player dose not belong to the game session, it will return an error.
+After player is notified, they will communicate with the game server using the game session UUID and their UUID. If the game server determines the game session or the player does not belong to the game session, it will return an error.
 
-Upon transition to the game, an n x n board is created on the client, with the corresponding data structure on the server. The variable n is determined by the server on startup, and represents the number of players in a game session; i.e. when there are n players in the queue, a new game is created which generates an n x n board clientside.
+Upon transition to the game, a board is created on the client, with the corresponding data structure on the server. The number of tiles and the number of players in each section is determined by the server on startup.
 
-- The server creates a data structure representing the grid, each cell contains a CellState: OPEN, USED (by player), CLOSED (by player)
-- Each client may only start to draw on an OPEN cell
-- When a user draws on a cell, the coords and user name are sent to the server and the cell changes to USED state, keeping track of the player
-- If a user lets go of drawing, a transmission to the server is sent, if the cell is over 50% covered its state is changed to CLOSED, else it is OPEN again
-- Each action by any user will trigger a retransmission of the current state of the game board to all players
+- The server creates a data structure representing the grid, each cell contains a CellState: locked, claimed, or unclaimed.
+- Each client may only start to draw on an unclaimed cell
+- When a user draws on a cell, the tile index is sent to the server and the cell changes to locked state, keeping track of the player
+- If a user lets go of drawing, a transmission to the server is sent, if the cell was locked by the player, it changes to claimed state, otherwise it remains locked.
+- The server broadcasts the state of the cell to all clients.
 
 The player will first request a colour for their pen.
 
@@ -243,8 +247,6 @@ The server will then notify all other players in the game session of the pen up 
 
 ##### Winning Conditions
 
-
-
 After each successful tile claimed, the server will check if the player has claimed enough tiles to win the game. floor(num_tiles / num_players) + 1 tiles are required to win the game. If a player has won the game, the server will notify all players in the game session.
 
 ```json
@@ -280,6 +282,7 @@ If the game server receives a command that it does not recognize, it will return
     "error": "Unknown command"
 }
 ```
+
 ---
 
 ### SCOREBOARD
@@ -287,7 +290,7 @@ If the game server receives a command that it does not recognize, it will return
 After a game ends, the server sends the final results to all players. The client transitions to the SCOREBOARD state, where the final rankings and scores are displayed.
 
 - The client displays a table (scoreboard) with all players, their scores, and their ranking.
-- Scores are displayed in the format `player_score/num_of_players^2` (e.g., "15/64")
+- Scores are displayed in the format `player_score/num_of_tiles` (e.g., "15/64")
 - Players with the same score share the same rank (e.g., 1, 2, 2, 4).
 - The current player's row is highlighted for easy identification.
 - The entire scoreboard is visible, not just the top scores.
