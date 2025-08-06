@@ -168,7 +168,12 @@ class TCPServer:
     Multi-threaded TCP server with WebSocket support.
 
     Accepts incoming connections and spawns threads to handle each client
-    using the provided request handler function.
+    
+    Socket Handling: Creates and manages TCP socket connections, spawning
+    separate threads for each client connection to handle concurrent requests.
+    
+    Shared Object Handling: Passes a shared ServerState object to each request
+    handler to allow thread-safe access to shared server state.
     """
 
     def __init__(
@@ -200,7 +205,13 @@ class TCPServer:
     ) -> None:
         """
         Handle a single client connection.
-
+        
+        This method runs in a separate thread for each client connection and:
+        1. Wraps the TCP socket in a WebSocketInterface
+        2. Performs WebSocket handshake
+        3. Continuously receives and processes messages from the client
+        4. Passes messages to the request handler with shared state
+    
         Args:
             conn (socket.socket): Client connection socket
             addr (Tuple[str, int]): Client address tuple (host, port)
@@ -234,6 +245,13 @@ class TCPServer:
     def start(self) -> None:
         """
         Start the TCP server and listen for connections.
+        
+        This method creates the server socket and enters the main server loop:
+        1. Creates a TCP socket and binds it to the specified host/port
+        2. Sets socket options for address reuse
+        3. Listens for incoming connections
+        4. Accepts connections and spawns threads to handle each client
+        5. Continues listening until interrupted
         """
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
