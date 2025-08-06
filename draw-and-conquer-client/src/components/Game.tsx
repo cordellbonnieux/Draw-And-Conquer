@@ -15,6 +15,7 @@ type GameProps = {
 const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, number_of_players, player_colour, squareStates, updateSquares, players, currentPlayerId }) => {
   const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null)
   const [mouseDownTime, setMouseDownTime] = useState<number | null>(null)
+  const [heldIndex, setHeldIndex] = useState<number | null>(null)
 
   // Get the claimed color for a player (the darker color) - using exact same mapping as getColour function in App.tsx
   const getPlayerClaimedColor = (playerColour: string) => {
@@ -62,6 +63,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
 
     setMouseDownTime(Date.now())
     setMouseDownIndex(index)
+    setHeldIndex(index)
 
     const newStates = [...squareStates]
     newStates[index] = player_colour[0]
@@ -84,6 +86,7 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
     const newStates = [...squareStates]
     setMouseDownTime(null)
     setMouseDownIndex(null)
+    setHeldIndex(null)
 
     // If held down more than 1 second, mark as complete, else fail
     if (duration > 1000) {
@@ -140,6 +143,8 @@ const DenyAndConquerGame: React.FC<GameProps> = ({ uuid, ws, game_session_uuid, 
                 alignItems: 'center',
                 cursor: 'pointer',
                 backgroundColor: squareStates[index],
+                filter: heldIndex === index ? 'brightness(80%)' : 'brightness(100%)',
+                transition: 'filter 1s linear',
               }}
               onMouseDown={() => handleMouseDown(index)}
               onMouseUp={() => handleMouseUp()}
