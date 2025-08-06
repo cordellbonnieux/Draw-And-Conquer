@@ -110,6 +110,19 @@ def echo_back(
     data: str,
     _server_state: ServerState,
 ) -> None:
+    """
+    This function echoes back any JSON message received from a client.
+    It's used for testing WebSocket connectivity and protocol implementation.
+    
+    Socket Handling: Receives JSON messages from client WebSocket connections
+    and sends them back unchanged to test the WebSocket protocol implementation.
+
+    Args:
+        ws (WebSocketInterface): WebSocket connection to the client
+        _addr (Tuple[str, int]): Client address information (unused)
+        data (str): Raw JSON message from the client
+        _server_state (ServerState): Server state (unused in echo mode)
+    """
     try:
         _ = json.loads(data)
         ws.send(data)
@@ -121,6 +134,12 @@ def echo_back(
 def start_echo_server(args) -> None:
     """
     Start a simple echo server for testing.
+    
+    Socket Handling: Creates a TCP server that accepts WebSocket connections
+    and echoes back all received messages.
+    
+    Shared Object Handling: Creates a simple ServerState object for the echo
+    server, though it's not used in echo mode.
     """
     logging.info("Starting echo server [%s:%d]", args.host, args.echo_port)
 
@@ -192,6 +211,15 @@ def start_servers(args) -> None:
 
 
 def main():
+    """
+    Main entry point for the game server application.
+    
+    Socket Handling: Coordinates the creation and startup of TCP servers
+    that accept WebSocket connections from game clients.
+    
+    Shared Object Handling: Initializes shared state objects that are used
+    across multiple threads and processes in the server system.
+    """
     args = parse_args()
 
     configure_logging(args.log_level)
