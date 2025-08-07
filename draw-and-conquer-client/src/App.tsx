@@ -191,7 +191,7 @@ export default function App(): React.JSX.Element {
           uuid,
           'command': 'queue_heartbeat'
         }))
-      }, 10000)
+      }, 1000)
     }
   }
 
