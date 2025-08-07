@@ -29,19 +29,10 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-## Running The Client Locally
-
-### `npm install -g serve`
-
-To install Serve, which can be used to host a local production build.
-
-### `serve -s build`
-
-To run Serve with production build.
-
 ## Configuring Server Connection
 
-A file `.env` must be in this directory containing the following fields, without quotations.
+A file `.env` must be in this directory containing the following fields, without quotations to connect to a remote server.
+If no `.env` file is added, or the appropriate fields are not filled out, the client will fall back to `localhost` one ports `9437` & `9438`.
 
 ```
 REACT_APP_MATCH_MAKING_HOST="matchmaking server host"
