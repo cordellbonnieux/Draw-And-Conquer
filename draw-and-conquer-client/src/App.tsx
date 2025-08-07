@@ -93,7 +93,7 @@ export default function App(): React.JSX.Element {
    * Handles matchmaking websocket connection with the server
    */
   function matchMakingSocketConnection() {
-    const ws = new WebSocket('ws://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT)
+    const ws = new WebSocket('wss://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT)
     matchMakingSocketRef.current = ws;
 
     ws.onmessage = (event: MessageEvent) => {
@@ -134,7 +134,7 @@ export default function App(): React.JSX.Element {
    * Handles game websocket connection with the server
    */
   function gameSocketConnection() {
-    const ws = new WebSocket('ws://' + GAME_HOST + ':' + GAME_PORT)
+    const ws = new WebSocket('wss://' + GAME_HOST + ':' + GAME_PORT)
     gameSocketRef.current = ws;
 
     ws.onopen = () => {

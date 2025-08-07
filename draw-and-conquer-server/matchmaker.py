@@ -160,7 +160,7 @@ def matchmaker_request_handler(
 ) -> None:
     """
     Handle WebSocket requests for the matchmaker server.
-    
+
     Socket Handling: Receives JSON messages from client WebSocket connections,
     processes the matchmaking commands, and sends responses back through the
     WebSocket. Stores WebSocket connections for direct player communication.

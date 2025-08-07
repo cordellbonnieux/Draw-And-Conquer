@@ -64,6 +64,18 @@ def parse_args():
         help="Port number for echo server (testing only)",
     )
     parser.add_argument(
+        "--certfile",
+        type=str,
+        required=True,
+        help="Path to SSL certificate file",
+    )
+    parser.add_argument(
+        "--keyfile",
+        type=str,
+        required=True,
+        help="Path to SSL key file",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -113,7 +125,7 @@ def echo_back(
     """
     This function echoes back any JSON message received from a client.
     It's used for testing WebSocket connectivity and protocol implementation.
-    
+
     Socket Handling: Receives JSON messages from client WebSocket connections
     and sends them back unchanged to test the WebSocket protocol implementation.
 
@@ -134,10 +146,10 @@ def echo_back(
 def start_echo_server(args) -> None:
     """
     Start a simple echo server for testing.
-    
+
     Socket Handling: Creates a TCP server that accepts WebSocket connections
     and echoes back all received messages.
-    
+
     Shared Object Handling: Creates a simple ServerState object for the echo
     server, though it's not used in echo mode.
     """
@@ -149,6 +161,8 @@ def start_echo_server(args) -> None:
         port=args.echo_port,
         request_handler=echo_back,
         server_state=server_state,
+        certfile=args.certfile,
+        keyfile=args.keyfile,
     )
 
     echo_thread = threading.Thread(target=echo_server.start, daemon=True)
@@ -175,6 +189,8 @@ def start_servers(args) -> None:
         port=args.matchmaker_port,
         request_handler=matchmaker_request_handler,
         server_state=matchmaker_state,
+        certfile=args.certfile,
+        keyfile=args.keyfile,
     )
 
     game_server = TCPServer(
@@ -182,6 +198,8 @@ def start_servers(args) -> None:
         port=args.games_server_port,
         request_handler=game_server_request_handler,
         server_state=game_state,
+        certfile=args.certfile,
+        keyfile=args.keyfile,
     )
 
     logging.info("Starting servers")
@@ -213,10 +231,10 @@ def start_servers(args) -> None:
 def main():
     """
     Main entry point for the game server application.
-    
+
     Socket Handling: Coordinates the creation and startup of TCP servers
     that accept WebSocket connections from game clients.
-    
+
     Shared Object Handling: Initializes shared state objects that are used
     across multiple threads and processes in the server system.
     """

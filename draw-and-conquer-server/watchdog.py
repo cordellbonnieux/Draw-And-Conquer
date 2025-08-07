@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 class QueueWatchdog:
     """
     Monitors the matchmaking queue for timeouts and creates games when enough players are ready.
-    
+
     This class runs in a separate thread and continuously monitors the matchmaking
     queue for inactive players and creates new game sessions when enough players
     are available. It accesses shared state objects to coordinate between the
     matchmaker and game server.
-    
+
     Shared Object Handling: Accesses shared MatchmakerState and GameServerState
     objects to monitor queue status, remove inactive players, and create new
     game sessions. All access is synchronized through the state objects' locks.
@@ -48,11 +48,11 @@ class QueueWatchdog:
     def run(self) -> None:
         """
         Main monitoring loop that runs continuously.
-        
+
         This method runs in a separate thread and continuously monitors the
         matchmaking system. It checks for inactive players and creates new
         games when enough players are available.
-        
+
         Shared Object Handling: Accesses shared state objects to monitor and
         modify the matchmaking queue and game sessions.
         """
@@ -65,11 +65,11 @@ class QueueWatchdog:
     def _remove_inactive_players(self, current_time: float) -> None:
         """
         Remove players who haven't sent heartbeats within the timeout period.
-        
+
         This method identifies players who haven't sent heartbeats within the
         timeout period and removes them from the matchmaking queue. It also
         notifies the players through their WebSocket connections.
-        
+
         Shared Object Handling: Reads from shared MatchmakerState to check
         player heartbeats and removes inactive players from the queue.
 
@@ -198,11 +198,11 @@ class GameSessionWatchdog:
     def run(self) -> None:
         """
         Main monitoring loop that runs continuously.
-        
+
         This method runs in a separate thread and continuously monitors all
         active game sessions for inactive players during the colour selection
         phase. It removes inactive players and ends games when necessary.
-        
+
         Shared Object Handling: Accesses shared GameServerState to monitor
         game sessions and modify session state when removing players.
         """
@@ -234,11 +234,11 @@ class GameSessionWatchdog:
     ) -> None:
         """
         Handle removal of inactive players and check if game can continue.
-        
+
         This method removes inactive players from a game session and notifies
         them through their WebSocket connections. It's called when players
         don't request colours within the timeout period.
-        
+
         Shared Object Handling: Modifies shared game session state by removing
         players and their associated data from the session.
 
@@ -275,11 +275,11 @@ class GameSessionWatchdog:
     ) -> None:
         """
         End a game session due to insufficient players.
-        
+
         This method ends a game session when there aren't enough players to
         continue. It notifies all remaining players and removes the session
         from the game server state.
-        
+
         Shared Object Handling: Modifies shared GameServerState by removing
         the game session and notifies all players through their WebSocket
         connections.

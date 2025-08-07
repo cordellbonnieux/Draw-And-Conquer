@@ -329,7 +329,7 @@ class GameSession:
 class GameServerState(ServerState):
     """
     Manages multiple game sessions and provides thread-safe access.
-    
+
     Shared Object Handling: Contains a dictionary of game sessions that
     can be accessed by multiple threads representing different player
     connections. All access is synchronized using the inherited lock.
@@ -385,7 +385,7 @@ class GameServerState(ServerState):
     def remove_game_session(self, game_session_uuid: str) -> None:
         """
         Remove a game session when a game ends or when all players disconnect.
-    
+
         Args:
             game_session_uuid (str): Unique identifier for the game session to remove
         """
@@ -423,7 +423,7 @@ def game_server_request_handler(
     """
     Socket Handling: Receives JSON messages from client WebSocket connections,
     processes the commands, and sends responses back through the WebSocket.
-    
+
     Shared Object Handling: Accesses shared game session data through the
     GameServerState object, ensuring thread-safe access to session information
     when multiple players are connected simultaneously.
@@ -626,10 +626,7 @@ def game_server_request_handler(
                         }
                     )
 
-                game_win_message = {
-                    "command": "game_win",
-                    "players": scoreboard
-                }
+                game_win_message = {"command": "game_win", "players": scoreboard}
                 session.broadcast_message(game_win_message)
                 logger.info("Session %s: Game ended", game_session_uuid)
 
