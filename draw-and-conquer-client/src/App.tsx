@@ -45,20 +45,6 @@ export default function App(): React.JSX.Element {
   const [scoreboardData, setScoreboardData] = useState([])
 
   /**
-   * Populated when a player wins a game, scoreboard is updated with this var
-   * 
-   * UNUSED?
-   * 
-   * TODO pop this prop in SscoreBoard component
-   * 
-   */
-  const [winner, setWinner] = useState({
-    'uuid': '',
-    'name': '',
-    'colour': ''
-  })
-
-  /**
    * Determines the App's current view/UI
    */
   const body: () => React.JSX.Element = () => {
@@ -93,7 +79,7 @@ export default function App(): React.JSX.Element {
    * Handles matchmaking websocket connection with the server
    */
   function matchMakingSocketConnection() {
-    const ws = new WebSocket('wss://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT)
+    const ws = new WebSocket('ws://' + MATCH_MAKING_HOST + ':' + MATCH_MAKING_PORT)
     matchMakingSocketRef.current = ws;
 
     ws.onmessage = (event: MessageEvent) => {
@@ -134,7 +120,7 @@ export default function App(): React.JSX.Element {
    * Handles game websocket connection with the server
    */
   function gameSocketConnection() {
-    const ws = new WebSocket('wss://' + GAME_HOST + ':' + GAME_PORT)
+    const ws = new WebSocket('ws://' + GAME_HOST + ':' + GAME_PORT)
     gameSocketRef.current = ws;
 
     ws.onopen = () => {
@@ -178,16 +164,9 @@ export default function App(): React.JSX.Element {
           })
           break
         case 'game_win':
-          console.log('game win triggered!')
-          // The server sends scoreboard data in the game_win command as 'players'
           if (data.players) {
             setScoreboardData(data.players)
           }
-          setWinner({
-            'colour': data.winnder_colour,
-            'uuid': data.winnder_uuid,
-            'name': data.winnder_name
-          })
           setState(State.SCOREBOARD)
           ws.close()
           break
