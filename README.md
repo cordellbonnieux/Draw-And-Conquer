@@ -4,7 +4,7 @@
 
 ### Description
 
-This is a browser based multiplayer game, where players compete to fill in squares in a grid by clicking down on them until they change color. Each square can only be clicked on by one player at a time. A player wins when they have colored more squares than anyone else.
+This is a browser based online multiplayer game, where players compete to fill in squares in a grid by clicking down on them until they change color. Each square can only be clicked on by one player at a time. A player wins when they have colored more squares than anyone else.
 
 ### Application Flow
 
