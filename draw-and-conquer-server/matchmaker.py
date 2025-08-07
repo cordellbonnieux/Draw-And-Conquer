@@ -91,7 +91,7 @@ class MatchmakerState(ServerState):
 
     def remove_player(self, player_id: str) -> None:
         """
-        Remove a specific player from the queue and all associated data.
+        Remove a specific player from the queue and all associated data (typically when a player disconnects or timeouts).
 
         Args:
             player_id (str): Unique identifier for the player to remove
@@ -114,7 +114,9 @@ class MatchmakerState(ServerState):
 
     def heartbeat_player(self, player_id: str) -> None:
         """
-        Update the last heartbeat time for a player.
+        This method updates the last heartbeat time for a player to indicate
+        they are still active and connected. It's used by the watchdog to
+        detect inactive players.
 
         Args:
             player_id (str): Unique identifier for the player
@@ -158,6 +160,10 @@ def matchmaker_request_handler(
 ) -> None:
     """
     Handle WebSocket requests for the matchmaker server.
+
+    Socket Handling: Receives JSON messages from client WebSocket connections,
+    processes the matchmaking commands, and sends responses back through the
+    WebSocket. Stores WebSocket connections for direct player communication.
 
     Args:
         ws (WebSocketInterface): WebSocket connection for the player

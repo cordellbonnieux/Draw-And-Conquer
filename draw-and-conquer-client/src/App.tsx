@@ -45,20 +45,6 @@ export default function App(): React.JSX.Element {
   const [scoreboardData, setScoreboardData] = useState([])
 
   /**
-   * Populated when a player wins a game, scoreboard is updated with this var
-   * 
-   * UNUSED?
-   * 
-   * TODO pop this prop in SscoreBoard component
-   * 
-   */
-  const [winner, setWinner] = useState({
-    'uuid': '',
-    'name': '',
-    'colour': ''
-  })
-
-  /**
    * Determines the App's current view/UI
    */
   const body: () => React.JSX.Element = () => {
@@ -178,16 +164,9 @@ export default function App(): React.JSX.Element {
           })
           break
         case 'game_win':
-          console.log('game win triggered!')
-          // The server sends scoreboard data in the game_win command as 'players'
           if (data.players) {
             setScoreboardData(data.players)
           }
-          setWinner({
-            'colour': data.winnder_colour,
-            'uuid': data.winnder_uuid,
-            'name': data.winnder_name
-          })
           setState(State.SCOREBOARD)
           ws.close()
           break
